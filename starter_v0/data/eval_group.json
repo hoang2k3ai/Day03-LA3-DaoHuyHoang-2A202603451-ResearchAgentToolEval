@@ -2,6 +2,424 @@
   "dataset_id": "day04_v2_research_group",
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
-  "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "allowed_failure_types": [
+    "wrong_tool",
+    "wrong_arg_value",
+    "wrong_boundary",
+    "unnecessary_tool",
+    "out_of_scope",
+    "missing_info"
+  ],
+  "cases": [
+    {
+      "id": "G01_social_search_topic",
+      "phase": "B",
+      "suite": "group",
+      "query": "Mọi người đang nói gì về Claude Opus trên mạng xã hội tuần này?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "social_search",
+            "args": {
+              "query": "Claude Opus"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "Chủ đề trên mạng xã hội (không phải tài khoản cụ thể) → social_search với query là chủ đề.",
+        "difficulty": "medium",
+        "what_it_tests": "Chủ đề trên mạng xã hội (không phải tài khoản cụ thể) → social_search với query là chủ đề."
+      }
+    },
+    {
+      "id": "G02_papers_search",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tìm giúp mình vài bài báo khoa học về retrieval-augmented generation",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "papers",
+            "args": {
+              "query": "retrieval-augmented generation"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "Yêu cầu tìm bài báo khoa học → papers, không dùng lookup web.",
+        "difficulty": "medium",
+        "what_it_tests": "Yêu cầu tìm bài báo khoa học → papers, không dùng lookup web."
+      }
+    },
+    {
+      "id": "G03_policy_internal",
+      "phase": "B",
+      "suite": "group",
+      "query": "Chính sách hoàn tiền của công ty là gì?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "policy",
+            "args": {
+              "query": "hoàn tiền"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "Câu hỏi về quy định nội bộ → policy, không tra web.",
+        "difficulty": "medium",
+        "what_it_tests": "Câu hỏi về quy định nội bộ → policy, không tra web."
+      }
+    },
+    {
+      "id": "G04_out_of_scope_code",
+      "phase": "B",
+      "suite": "group",
+      "query": "Viết giúp mình hàm sắp xếp danh sách trong Python",
+      "failure_type": "out_of_scope",
+      "expect": {
+        "no_tool": true
+      },
+      "metadata": {
+        "skill": "Yêu cầu lập trình ngoài phạm vi research agent → không gọi tool nào.",
+        "difficulty": "easy",
+        "what_it_tests": "Yêu cầu lập trình ngoài phạm vi research agent → không gọi tool nào."
+      }
+    },
+    {
+      "id": "G05_fetch_url",
+      "phase": "B",
+      "suite": "group",
+      "query": "Đọc giúp mình nội dung trang này: https://arxiv.org/abs/2005.11401",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "fetch",
+            "args": {
+              "url": "https://arxiv.org/abs/2005.11401"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "Có URL cụ thể và yêu cầu đọc nội dung → fetch với đúng URL.",
+        "difficulty": "medium",
+        "what_it_tests": "Có URL cụ thể và yêu cầu đọc nội dung → fetch với đúng URL."
+      }
+    },
+    {
+      "id": "G06_papers_then_text",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm bài báo về LoRA fine-tuning"
+        },
+        {
+          "role": "assistant",
+          "content": "Kết quả papers (đã hiển thị cho người dùng): 1) LoRA: Low-Rank Adaptation of Large Language Models, arXiv 2106.09685"
+        },
+        {
+          "role": "user",
+          "content": "Đọc nội dung bài đầu tiên cho mình"
+        }
+      ],
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "paper_text",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "2 turns",
+        "difficulty": "hard",
+        "what_it_tests": "2 turns: lượt 1 gọi papers; lượt 2 phải chuyển sang paper_text thay vì tìm lại.",
+        "eval_fix": "v9: thêm kết quả papers ở lượt trước để paper_text có arXiv ID thật trong ngữ cảnh."
+      }
+    },
+    {
+      "id": "G07_policy_followup",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Chính sách hoàn tiền là gì?"
+        },
+        {
+          "role": "user",
+          "content": "Còn chính sách bảo hành thì sao?"
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "policy",
+            "args": {
+              "query": "bảo hành"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "2 turns",
+        "difficulty": "hard",
+        "what_it_tests": "2 turns: lượt 2 là câu hỏi mới về chủ đề khác → policy với query bảo hành, không lặp hoàn tiền."
+      }
+    },
+    {
+      "id": "G08_clarify_then_timeline",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tóm tắt tweet của người đó giúp mình"
+        },
+        {
+          "role": "user",
+          "content": "Người đó là Andrej Karpathy"
+        }
+      ],
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "timeline",
+            "args": {
+              "screenname": "karpathy"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "2 turns",
+        "difficulty": "hard",
+        "what_it_tests": "2 turns: lượt 1 thiếu người nào → hỏi lại; lượt 2 map tên thành handle karpathy rồi gọi timeline."
+      }
+    },
+    {
+      "id": "G09_fetch_then_no_tool",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Đọc giúp mình https://openai.com/blog/gpt-5"
+        },
+        {
+          "role": "assistant",
+          "content": "[Nội dung trang đã đọc bằng fetch] Bài viết giới thiệu một mô hình ngôn ngữ mới với ba điểm: cải thiện suy luận, ngữ cảnh dài hơn, và đánh giá an toàn lại."
+        },
+        {
+          "role": "user",
+          "content": "Tóm tắt lại bằng 3 gạch đầu dòng"
+        }
+      ],
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true
+      },
+      "metadata": {
+        "skill": "2 turns",
+        "difficulty": "hard",
+        "what_it_tests": "2 turns: sau khi đã có nội dung trang (lượt 1), lượt 2 chỉ là tóm tắt từ ngữ cảnh, không gọi tool mới.",
+        "eval_fix": "v9: thêm nội dung trang đã fetch vào ngữ cảnh để lượt cuối đủ thông tin mà không cần fetch lại."
+      }
+    },
+    {
+      "id": "G10_send_after_confirm",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tin AI hôm nay: 1) Công ty X ra mắt mô hình Y. 2) Nghiên cứu Z về an toàn AI."
+        },
+        {
+          "role": "user",
+          "content": "Đăng bản tin AI hôm nay lên Telegram"
+        },
+        {
+          "role": "user",
+          "content": "Ừ, đăng đi"
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "send",
+            "args": {
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "2 turns",
+        "difficulty": "hard",
+        "what_it_tests": "2 turns: lượt 1 phải hỏi xác nhận; chỉ sau khi người dùng đồng ý (lượt 2) mới gọi send với confirmed=true.",
+        "eval_fix": "v9: thêm bản tin vào ngữ cảnh. Lượt 'Đăng ... lên Telegram' là yêu cầu cần xác nhận; lượt cuối là xác nhận."
+      }
+    },
+    {
+      "id": "G11_calculate_percent",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tính giúp mình 15% của 2 tỷ 400 triệu",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "calculate",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Có phép tính số học cụ thể → calculate, không tự tính nhẩm."
+      }
+    },
+    {
+      "id": "G12_time_range_week",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tin AI tuần trước là từ ngày nào đến ngày nào?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "resolve_time_range",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Hỏi khoảng thời gian cụ thể của một cụm thời gian → resolve_time_range trước khi tìm tin."
+      }
+    },
+    {
+      "id": "G13_extract_links_paste",
+      "phase": "B",
+      "suite": "group",
+      "query": "Lấy hết link trong đoạn này: đọc https://a.com/x và https://b.org/y nhé",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "extract_links",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Người dùng dán đoạn có nhiều link và muốn liệt kê link → extract_links."
+      }
+    },
+    {
+      "id": "G14_wiki_definition",
+      "phase": "B",
+      "suite": "group",
+      "query": "Trí tuệ nhân tạo là gì?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "wiki_summary",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Câu hỏi 'X là gì' về khái niệm nền → wiki_summary, không dùng lookup tin tức."
+      }
+    },
+    {
+      "id": "G15_dedupe_after_search",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm tin AI hôm nay"
+        },
+        {
+          "role": "assistant",
+          "content": "Kết quả (đã hiển thị): 1) Công ty X ra mắt mô hình Y — https://a.com/ai-news ; 2) Công ty X ra mắt mô hình Y — https://a.com/ai-news?utm_source=x ; 3) Nghiên cứu Z về an toàn AI — https://b.org/safety"
+        },
+        {
+          "role": "user",
+          "content": "Gộp các tin bị trùng trong kết quả trên giúp mình"
+        }
+      ],
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "dedupe_items",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "hard",
+        "what_it_tests": "Lượt 1 tìm tin; lượt 2 yêu cầu gộp tin trùng → dedupe_items trên kết quả đã có, không tìm lại.",
+        "eval_fix": "v9: thêm kết quả tìm kiếm có tin trùng vào ngữ cảnh để dedupe_items có dữ liệu để xử lý."
+      }
+    },
+    {
+      "id": "G16_save_note_needs_confirm",
+      "phase": "B",
+      "suite": "group",
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "yes_no"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "route_new_tool",
+        "difficulty": "hard",
+        "what_it_tests": "Lưu ghi chú là ghi file: phải hỏi xác nhận (yes_no) trước, không gọi save_note với confirmed=true ngay.",
+        "eval_fix": "v9: thêm bản tin vào ngữ cảnh để có nội dung cần lưu; expect không đổi."
+      },
+      "turns": [
+        {
+          "role": "assistant",
+          "content": "Bản tin AI hôm nay: 1) Công ty X ra mắt mô hình Y. 2) Nghiên cứu Z về an toàn AI."
+        },
+        {
+          "role": "user",
+          "content": "Lưu bản tin này vào ghi chú giúp mình"
+        }
+      ]
+    }
+  ]
 }
