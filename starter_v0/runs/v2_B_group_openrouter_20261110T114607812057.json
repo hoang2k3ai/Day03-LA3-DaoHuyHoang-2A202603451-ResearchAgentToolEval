@@ -1,0 +1,831 @@
+{
+  "run_id": "v2_B_group_openrouter_20261110T114607812057",
+  "version": "v2",
+  "artifact_version": "v2+pdca07582dca6+t296ad6dde2ed",
+  "prompt_hash": "dca07582dca6427433845c962eedb3e8798b51a444cfca37f0fa396fe2b07e65",
+  "tools_hash": "296ad6dde2ed114abe4eb1690576d8d0576a6fa67897bb81f6d450101ab9c6f1",
+  "phase": "B",
+  "suite": "group",
+  "provider": "openrouter",
+  "model": "openai/gpt-4o-mini",
+  "system_prompt": "artifacts\\eval_versions\\system_prompt_v1.md",
+  "tools": "artifacts\\tools.yaml",
+  "eval_cases": "data\\eval_group.json",
+  "dataset_id": "day04_v2_research_group",
+  "dataset_role": "group",
+  "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
+  "generated_at": "2026-11-10T11:46:07",
+  "summary": {
+    "total_cases": 10,
+    "measured_cases": 10,
+    "provider_error_cases": 0,
+    "passed_cases": 8,
+    "case_accuracy": 0.8,
+    "tool_routing_accuracy": 0.9,
+    "argument_accuracy": 0.8,
+    "multiturn_accuracy": 0.8,
+    "failure_counts": {
+      "out_of_scope": 1,
+      "wrong_arg_value": 1
+    },
+    "observed_mismatch_counts": {
+      "unexpected_tool_call": 1,
+      "wrong_arg_value": 1
+    }
+  },
+  "results": [
+    {
+      "id": "G01_inventory_known_urls",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "what_it_tests": "Kiểm kê URL có sẵn thay vì gọi web hoặc đọc từng trang."
+      },
+      "input": "Gom hai nguồn sau theo tên miền: https://example.com/a và https://example.org/b.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "source_inventory",
+            "args": {
+              "urls": [
+                "https://example.com/a",
+                "https://example.org/b"
+              ]
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "source_inventory",
+            "args": {
+              "urls": [
+                "https://example.com/a",
+                "https://example.org/b"
+              ]
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "source_inventory",
+          "args": {
+            "urls": [
+              "https://example.com/a",
+              "https://example.org/b"
+            ]
+          },
+          "result": {
+            "tool": "source_inventory",
+            "source_count": 2,
+            "domain_count": 2,
+            "groups": [
+              {
+                "domain": "example.com",
+                "urls": [
+                  "https://example.com/a"
+                ]
+              },
+              {
+                "domain": "example.org",
+                "urls": [
+                  "https://example.org/b"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "G02_exact_handle_and_count",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "what_it_tests": "Bỏ ký tự @ và giữ số bài đăng được yêu cầu."
+      },
+      "input": "Lấy đúng 2 bài đăng mới nhất của tài khoản @NASA trên X.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "timeline",
+            "args": {
+              "screenname": "NASA",
+              "limit": 2
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "timeline",
+            "args": {
+              "screenname": "NASA",
+              "limit": 2
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "timeline",
+          "args": {
+            "screenname": "NASA",
+            "limit": 2
+          },
+          "result": {
+            "tool": "get_user_tweets",
+            "screenname": "NASA",
+            "items": [
+              {
+                "title": "We had a great time at MAX POWER — and made a lot of news!",
+                "summary": "We had a great time at MAX POWER — and made a lot of news!\n\nWe're recruiting a new class of astronauts, making major advancements on the Moon Base, and challenging students to a $1 million design competition. Catch up with everything we announced at the festival: https://t.co/GrfsD9eADy",
+                "url": "https://x.com/NASA/status/2119846862286930036",
+                "source": "@NASA",
+                "date": "Mon Nov 09 17:37:31 +0000 2026",
+                "metrics": {
+                  "favorites": 1113,
+                  "retweets": 142,
+                  "views": "325445"
+                }
+              },
+              {
+                "title": "The weekend ends. The mission keeps going.",
+                "summary": "The weekend ends. The mission keeps going.\n\nThis is what American ambition looks like. 🇺🇸🚀 https://t.co/C5d5Z0imPm",
+                "url": "https://x.com/NASA/status/2119833829389041896",
+                "source": "@NASA",
+                "date": "Mon Nov 09 16:45:44 +0000 2026",
+                "metrics": {
+                  "favorites": 1850,
+                  "retweets": 276,
+                  "views": "641401"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "G03_month_news",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "what_it_tests": "Kết hợp phạm vi tháng, loại tin tức và số kết quả."
+      },
+      "input": "Tìm 3 tin tức về pin thể rắn trong tháng này trên web.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "lookup",
+            "args": {
+              "topic": "news",
+              "timeframe": "month",
+              "max_results": 3
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "lookup",
+            "args": {
+              "query": "pin thể rắn",
+              "topic": "news",
+              "timeframe": "month",
+              "max_results": 3
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "lookup",
+          "args": {
+            "query": "pin thể rắn",
+            "topic": "news",
+            "timeframe": "month",
+            "max_results": 3
+          },
+          "result": {
+            "tool": "web_search",
+            "query": "pin thể rắn",
+            "topic": "news",
+            "timeframe": "month",
+            "items": [
+              {
+                "title": "Pin thể rắn: Bước tiến công nghệ mở ra giới hạn mới cho xe điện Geely",
+                "url": "https://cafef.vn/pin-the-ran-buoc-tien-cong-nghe-mo-ra-gioi-han-moi-cho-xe-dien-geely-18826102921401721.chn",
+                "source": "cafef.vn",
+                "summary": "Từ pin thể rắn đến hệ sinh thái công nghệ pin\n\nPin thể rắn là một phần trong lộ trình tương lai, nhưng Geely cũng phát triển nhiều thế hệ pin lithium-ion hiện hữu, trong đó có LFP và Short Blade Battery.\n\nTheo báo cáo ESG của Geely, Aegis Short Blade Battery do Geely Auto tự phát triển và sản xuất có mật độ năng lượng cell lên tới 192 Wh/kg. Hãng cho biết cấu trúc này hỗ trợ lưu trữ nhiều năng lượng hơn trong cùng thể tích, qua đó góp phần tăng phạm vi hoạt động. [...] Một giới hạn của xe điện là bài toán cn bằng giữa dung lượng pin và trọng lượng. Tăng dung lượng thường đồng nghĩa tăng kích thước và khối lượng bộ pin, trong khi pin thể rắn mở ra hướng tiếp cận khác nhờ thay đổi cấu trúc và vật liệu.\n\nVới mục tiêu mật độ năng lượng tới 500 Wh/kg, Geely kỳ vọng có thể lưu trữ nhiều năng lượng hơn trong cùng khối lượng pin. Nếu được hiện thực hóa trên sản phẩm thương mại, công nghệ này có thể giảm nhu cầu sạc giữa hành trình và mở rộng phạm vi sử dụng xe điện. [...] Song song đó, Geely phát triển Ultra Short Blade Battery với công nghệ hàn laser tại các điểm kết nối cell và nắp pin. Hãng cho biết giải pháp này giúp giảm khoảng 10% nhiệt phát sinh khi sạc và nng tốc độ sạc cực đại lên 6C.\n\nTừ mục tiêu hơn 1.000 km mỗi lần sạc của pin thể rắn trong tương lai đến khả năng sạc 10-70% trong 4 phút 30 giy ở các thử nghiệm hiện tại, Geely đang phát triển công nghệ pin theo nhiều hướng: tăng mật độ năng lượng, rút ngắn thời gian nạp và kéo dài tuổi thọ.",
+                "score": 0.81418616
+              },
+              {
+                "title": "Pin Trung Quốc sạc 12 phút chạy thêm 500 km, tuổi thọ lý thuyết hơn 1 triệu km",
+                "url": "https://viettimes.vn/pin-trung-quoc-sac-12-phut-chay-them-500-km-tuoi-tho-ly-thuyet-hon-1-trieu-km-post207620.html",
+                "source": "viettimes.vn",
+                "summary": "Thời điểm ra mắt sản phẩm được xem là bước đi có tính toán của Svolt. Pin thể rắn hoàn toàn thay thế chất điện phn lỏng bằng vật liệu rắn, song việc sản xuất đại trà vẫn gặp nhiều khó khăn và tốn kém. Trong khi đó, Svolt đang thúc đẩy sản xuất hàng loạt pin bán thể rắn ngay từ thời điểm hiện tại, với mục tiêu đưa chi phí xuống ngang bằng pin lithium-ion truyền thống sử dụng chất điện phn lỏng. [...] Nhiều nhà phát triển pin cho rằng pin bán thể rắn chỉ là giải pháp tạm thời trong quá trình tiến tới công nghệ pin thể rắn hoàn toàn. Tuy nhiên, một nhà sản xuất pin lớn của Trung Quốc lại có quan điểm khác.\n\nSvolt Energy thông báo trên Weibo rằng những bộ pin sạc nhanh bán thể rắn Dragon Armor dung lượng 100 kWh đầu tiên đã xuất xưởng hàng loạt tại nhà máy ở thành phố Thường Chu, tỉnh Giang Tô. [...] Nhà sản xuất này cho rằng pin bán thể rắn sẽ tiếp tục là một lựa chọn quan trọng, có chỗ đứng lu dài trên thị trường xe điện trong nhiều năm tới. Khác với pin thể rắn hoàn toàn sử dụng chất điện phn ở trạng thái rắn, pin bán thể rắn kết hợp cả chất điện phn lỏng và rắn để vận chuyển ion bên trong pin.\n\n## Chạy thêm hơn 500 km chỉ sau 12 phút sạc",
+                "score": 0.80735475
+              },
+              {
+                "title": "Trung Quốc hé lộ 10 xu hướng công nghệ ô tô 2027",
+                "url": "https://vov.vn/o-to-xe-may/trung-quoc-he-lo-10-xu-huong-cong-nghe-o-to-2027-pin-the-ran-400-whkg-gay-chu-y-post1346086.vov",
+                "source": "vov.vn",
+                "summary": "Pin thể rắn được kỳ vọng mang lại mật độ năng lượng cao, cải thiện độ an toàn và khả năng hoạt động trong dải nhiệt độ rộng. Tuy nhiên, việc bước vào giai đoạn sản xuất thử nghiệm không đồng nghĩa công nghệ này đã sẵn sàng được thương mại hóa trên quy mô lớn.\n\ntrung quoc he lo 10 xu huong cong nghe o to 2027, pin the ran 400 wh kg gay chu y hinh anh 2\n\nPin thể rắn của Chery. Nguồn: Chery",
+                "score": 0.77548623
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "G04_recent_papers",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "what_it_tests": "Chọn tìm kiếm arXiv và sắp xếp theo ngày nộp."
+      },
+      "input": "Tìm 2 paper về retrieval augmented generation trên arXiv, ưu tiên ngày nộp mới nhất.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "papers",
+            "args": {
+              "max_results": 2,
+              "sort_by": "submittedDate"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "papers",
+            "args": {
+              "query": "retrieval augmented generation",
+              "max_results": 2,
+              "sort_by": "submittedDate"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "papers",
+          "args": {
+            "query": "retrieval augmented generation",
+            "max_results": 2,
+            "sort_by": "submittedDate"
+          },
+          "result": {
+            "tool": "arxiv_search",
+            "query": "retrieval augmented generation",
+            "api_query": "all:retrieval AND all:augmented AND all:generation",
+            "total_results": 8942,
+            "items": [
+              {
+                "arxiv_id": "2611.11349v1",
+                "title": "AOP-Smart-Finder: A High-Throughput Human-AI Hybrid Framework for AOP Discovery and Evidence Mapping from Large-Scale Literature",
+                "summary": "The rapid growth of scientific literature and the high heterogeneity of biological terminology and mechanistic descriptions make it difficult for researchers to integrate scattered research evidence, identify connections among biological events, and construct mechanistic networks. Here, we developed a high-throughput human-AI hybrid framework, AOP-Smart-Finder, for biological event discovery, relationship mining, and Adverse Outcome Pathway (AOP) construction and evidence mapping from large-scale literature. This framework integrates Large Language Models (LLMs), AOP-Smart retrieval-augmented generation (RAG) technology, and Python-based automation, supporting two analysis modes: one based on a single compound and the other based on a predefined set of biological events. In the di(2-ethylhexyl) phthalate (DEHP) case, the system processed 12,983 articles within 30 min and included 1,093 of them, from which it extracted 1,589 biological events (including 458 official key events [KEs] and 1,131 candidate KEs) and 2,519 key event relationships (KERs). In the amyotrophic lateral sclerosis (ALS) case, the system identified 55 stressors from 437 articles and extracted 278 biological events and 548 event relationships. Following manual curation and Weight of Evidence (WoE) evaluation, a mechanistic network comprising 16 KEs and 23 KERs was ultimately constructed. This framework can either use existing AOPs as knowledge guidance for mechanistic expansion and evidence supplementation, or discover novel event connections and construct mechanistic networks around user-specified research topics. It provides a high-throughput, traceable, human-AI hybrid methodology for complex biological mechanism elucidation and AOP discovery driven by large-scale literature.",
+                "authors": [
+                  "Qinjiang Niu",
+                  "Lu Yan"
+                ],
+                "published": "2026-11-08T12:50:55Z",
+                "updated": "2026-11-08T12:50:55Z",
+                "url": "http://arxiv.org/abs/2611.11349v1",
+                "pdf_url": "https://arxiv.org/pdf/2611.11349v1",
+                "source": "arxiv.org",
+                "primary_category": "cs.CL",
+                "categories": [
+                  "cs.CL",
+                  "q-bio.QM"
+                ]
+              },
+              {
+                "arxiv_id": "2611.11346v1",
+                "title": "IntentLens: Grounding Underspecified Multimodal Queries for Recommendation via Tool-Augmented Reasoning",
+                "summary": "As intelligent personal assistants are increasingly deployed in real-world scenarios, recommendation paradigms are shifting from passive preference matching to inferring user intent from underspecified multimodal inputs. In practical interactions, users typically issue a reference image paired with a vague natural language query, keeping key visual attributes, personalized preferences, and item-side constraints implicit. Existing recommendation methods either leverage historical user interactions augmented with multimodal item features or assume fully articulated textual queries; both paradigms struggle to resolve underspecified multimodal queries for accurate item matching. To address this limitation, we propose IntentLens, a tool-augmented recommendation framework that grounds ambiguous multimodal queries into query-relevant evidence prior to user-item matching. IntentLens follows a ground-then-rank pipeline: a shared multimodal LLM leverages visual tools, user memory modules, and item attribute retrieval tools to (i) infer latent user intent from image-text inputs and (ii) augment each candidate item with fine-grained, query-conditioned evidence. Subsequently, a lightweight ranker scores candidates based on the grounded representations. To facilitate research in this novel setting, we construct two benchmarks with underspecified multimodal queries, namely \\textsc{GoogleReview-MMTool} and \\textsc{Yelp-MMTool}. Extensive experiments on these benchmarks demonstrate that IntentLens outperforms competitive MLLM and retrieval baselines, and exhibits strong generalization to unseen categories and datasets.",
+                "authors": [
+                  "Xiao Chen",
+                  "Dong Fang",
+                  "Haitao Li",
+                  "Qing Li"
+                ],
+                "published": "2026-11-08T12:49:15Z",
+                "updated": "2026-11-08T12:49:15Z",
+                "url": "http://arxiv.org/abs/2611.11346v1",
+                "pdf_url": "https://arxiv.org/pdf/2611.11346v1",
+                "source": "arxiv.org",
+                "primary_category": "cs.IR",
+                "categories": [
+                  "cs.IR"
+                ]
+              }
+            ],
+            "rate_limit_note": "arXiv may return 429 if called too frequently; this tool waits at least 3 seconds between requests in-process."
+          }
+        }
+      ]
+    },
+    {
+      "id": "G05_outside_research",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "what_it_tests": "Không gọi tool cho thao tác đặt vé ngoài phạm vi research."
+      },
+      "input": "Đặt giúp mình hai vé xem phim tối mai.",
+      "expect": {
+        "no_tool": true,
+        "behavior": "refuse"
+      },
+      "result": {
+        "passed": false,
+        "routing_correct": false,
+        "args_correct": false,
+        "actual_tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "question": "Bạn có thể cho biết tên bộ phim và rạp chiếu mà bạn muốn đặt vé không?",
+              "response_type": "text"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "out_of_scope",
+        "observed_mismatch": "unexpected_tool_call",
+        "failure_type": "out_of_scope",
+        "failures": [
+          "expected no tool call"
+        ]
+      },
+      "tool_results": [
+        {
+          "tool": "clarify",
+          "args": {
+            "question": "Bạn có thể cho biết tên bộ phim và rạp chiếu mà bạn muốn đặt vé không?",
+            "response_type": "text"
+          },
+          "result": {
+            "tool": "ask_user",
+            "question": "Bạn có thể cho biết tên bộ phim và rạp chiếu mà bạn muốn đặt vé không?",
+            "response_type": "text",
+            "options": [],
+            "awaiting_user": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "GM01_correct_url",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "what_it_tests": "Ưu tiên URL được sửa ở lượt cuối, không gọi thêm URL cũ."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Đọc https://www.iana.org/domains/reserved giúp mình."
+        },
+        {
+          "role": "user",
+          "content": "Mình gửi nhầm. Chỉ đọc https://www.iana.org/help/example-domains thôi."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "fetch",
+            "args": {
+              "url": "https://www.iana.org/help/example-domains"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "fetch",
+            "args": {
+              "url": "https://www.iana.org/help/example-domains"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "fetch",
+          "args": {
+            "url": "https://www.iana.org/help/example-domains"
+          },
+          "result": {
+            "tool": "read_url",
+            "url": "https://www.iana.org/help/example-domains",
+            "items": [
+              {
+                "title": "Example Domains",
+                "url": "https://www.iana.org/help/example-domains",
+                "source": "iana.org",
+                "summary": "1. [Instructions and Guides](https://www.iana.org/help)\n\n# Example Domains\n\nA number of domains such as `example.com` and `example.org` are maintained\nfor documentation purposes. These domains may be used as illustrative\nexamples in documents without prior coordination with us. They are not\navailable for registration or transfer.\n\nWe provide a web service on the example domain hosts to provide basic\ninformation on the purpose of the domain. These web services are\nprovided as best effort, but are not designed to support production\napplications. We strongly recommend you do not design applications that\nrequire the example domains to have operating HTTP service.\n\n## Further Reading\n\n- [IANA-managed Reserved Domains](https://www.iana.org/domains/reserved)\n- [Special-Use Domain Names](https://www.iana.org/go/rfc6761) (RFC 6761)\n- [Reserved Top Level DNS Names](https://www.iana.org/go/rfc2606) (RFC 2606)\n\nLast revised last month."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "GM02_keep_topic_and_change_date",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "what_it_tests": "Cập nhật timeframe và giữ lại những ràng buộc không thay đổi."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Tìm tin web về robotics tháng này, tối đa 2 bài."
+        },
+        {
+          "role": "user",
+          "content": "Giữ nguyên chủ đề và số bài, đổi sang tuần này thôi."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "lookup",
+            "args": {
+              "query": "robotics",
+              "topic": "news",
+              "timeframe": "week",
+              "max_results": 2
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "actual_tool_calls": [
+          {
+            "name": "lookup",
+            "args": {
+              "query": "robotics",
+              "topic": "general",
+              "timeframe": "week",
+              "max_results": 2
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": "wrong_arg_value",
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "topic: expected 'news', got 'general'"
+        ]
+      },
+      "tool_results": [
+        {
+          "tool": "lookup",
+          "args": {
+            "query": "robotics",
+            "topic": "general",
+            "timeframe": "week",
+            "max_results": 2
+          },
+          "result": {
+            "tool": "web_search",
+            "query": "robotics",
+            "topic": "general",
+            "timeframe": "week",
+            "items": [
+              {
+                "title": "robotics",
+                "url": "https://dictionary.cambridge.org/us/dictionary/english/robotics",
+                "source": "dictionary.cambridge.org",
+                "summary": "robots(= machinescontrolled by computers that are used to performjobsautomatically): \n\nThe plantconstructs 800,000 skisperyear, using computerized robotics.\n\nThey had to come up with these really sporty robotics to get the crewmember up close to the solararray.\n\nMore examples Fewer examples [...] # Meaning of robotics in English\n\n\n\n\n\nrobotics\n\nnoun(\n\nusAudio 1/roʊˈbɑː.t̬ɪks/ukAudio 2/rəʊˈbɒt.ɪks/\n\nAdd to word listAdd to word list\n\nthe science of making and using robots(= machinescontrolled by computers that are used to performjobsautomatically): \n\nThe field of robotics has seen many excitingdevelopments in the last decade.\n\nStrangely, for the director of a robotics department, he doesn't seem to know what a robot is. [...] ## robotics | Business English\n\nrobotics\n\nnoun(\n\nIT, PRODUCTION ukAudio 4/rəʊˈbɒtɪks/usAudio 5\n\nAdd to word listAdd to word list\n\nthe science of making and using robots: \n\nWorkers were being laid off as plants used more robotics in theirassemblylines.\n\n (Definition of robotics from the Cambridge Business English Dictionary © Cambridge University Press) \n\n## Examples of robotics\n\n robotics \n\n One of the problems with bats, if you're a _robotics_ expert, is that they have so many joints.",
+                "score": 0.7336813
+              },
+              {
+                "title": "Robot - Wikipedia",
+                "url": "https://en.wikipedia.org/wiki/Robot",
+                "source": "en.wikipedia.org",
+                "summary": "The word robotics, used to describe this field of study, was coined by the science fiction writer Isaac Asimov. Asimov created the Three Laws of Robotics which are a recurring theme in his books. These have since been used by many others to define laws used in fiction. The three laws are pure fiction, and no technology yet created has the ability to understand or follow them, and in fact most robots serve military purposes, which run quite contrary to the first law and often the third law. Dr. [...] \"an automatically controlled, reprogrammable, multipurpose, manipulator programmable in three or more axes, which may be either fixed in place or mobile for use in industrial automation applications.\"\n\nThis definition is used by the International Federation of Robotics, the European Robotics Research Network (EURON) and many national standards committees. [...] There are robot kits like Lego Mindstorms, BIOLOID, OLLO from ROBOTIS, or BotBrain Educational Robots can help children to learn about mathematics, physics, programming, and electronics. Robotics have also been introduced into the lives of elementary and high school students in the form of robot competitions with the company FIRST (For Inspiration and Recognition of Science and Technology). The organization is the foundation for the FIRST Robotics Competition, FIRST Tech Challenge, FIRST Lego",
+                "score": 0.7036111
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "GM03_social_top_to_latest",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "what_it_tests": "Cập nhật thứ tự từ Top sang Latest trong hội thoại."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Tìm 4 bài X phổ biến về Rust."
+        },
+        {
+          "role": "user",
+          "content": "Đổi sang mới nhất, vẫn 4 bài về Rust."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "social_search",
+            "args": {
+              "query": "Rust",
+              "search_type": "Latest",
+              "limit": 4
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "social_search",
+            "args": {
+              "query": "Rust",
+              "search_type": "Latest",
+              "limit": 4
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "social_search",
+          "args": {
+            "query": "Rust",
+            "search_type": "Latest",
+            "limit": 4
+          },
+          "result": {
+            "tool": "search_tweets",
+            "query": "Rust",
+            "search_type": "Latest",
+            "items": [
+              {
+                "title": "@jasonkiwi6 @briandstone @KenrikMarch I used to spray epoxy  anti rust primer to make Bondo stick to aluminum. That, or ",
+                "summary": "@jasonkiwi6 @briandstone @KenrikMarch I used to spray epoxy  anti rust primer to make Bondo stick to aluminum. That, or using an aluminum body filler as first layer. Grinder deep scratches may have regular Bondo shrink and sink, and in a few weeks you can see the swelling.",
+                "url": "https://x.com/LucaGallerani34/status/2120014902878245076",
+                "source": "@LucaGallerani34",
+                "date": "Tue Nov 10 04:45:15 +0000 2026",
+                "metrics": {
+                  "favorites": 0,
+                  "retweets": 0,
+                  "views": "1"
+                }
+              },
+              {
+                "title": "明日からRUSTです👀",
+                "summary": "明日からRUSTです👀\n\nアプデ内容についていけてないので勉強しながらマイペースにやっていきます\n\n#スタラス https://t.co/jxNM01ERAE",
+                "url": "https://x.com/akiofficialgame/status/2120014900374503860",
+                "source": "@akiofficialgame",
+                "date": "Tue Nov 10 04:45:14 +0000 2026",
+                "metrics": {
+                  "favorites": 0,
+                  "retweets": 0,
+                  "views": "2"
+                }
+              },
+              {
+                "title": "【RUST】約1年ぶりの配信。IKKUNNーPVE鯖でまったり生活",
+                "summary": "【RUST】約1年ぶりの配信。IKKUNNーPVE鯖でまったり生活\nhttps://t.co/67IQvsIyrb",
+                "url": "https://x.com/kobitomama_611/status/2120014855965131126",
+                "source": "@kobitomama_611",
+                "date": "Tue Nov 10 04:45:04 +0000 2026",
+                "metrics": {
+                  "favorites": 0,
+                  "retweets": 0,
+                  "views": "1"
+                }
+              },
+              {
+                "title": "@LundukeJournal Next @dhh project will be forking Gnome and rewriting in Rust, calling it “Rome”.  You heard it here fir",
+                "summary": "@LundukeJournal Next @dhh project will be forking Gnome and rewriting in Rust, calling it “Rome”.  You heard it here first!",
+                "url": "https://x.com/Be_The_Ultimate/status/2120014689237168323",
+                "source": "@Be_The_Ultimate",
+                "date": "Tue Nov 10 04:44:24 +0000 2026",
+                "metrics": {
+                  "favorites": 0,
+                  "retweets": 0,
+                  "views": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "GM04_inventory_from_history",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "what_it_tests": "Giữ URL từ lượt trước và thêm URL mới vào cùng một lần kiểm kê."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Danh sách nguồn mình có là https://example.com/a và https://example.org/b."
+        },
+        {
+          "role": "user",
+          "content": "Thêm https://example.com/c. Cho mình số nguồn theo từng tên miền."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "source_inventory",
+            "args": {
+              "urls": [
+                "https://example.com/a",
+                "https://example.org/b",
+                "https://example.com/c"
+              ]
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "source_inventory",
+            "args": {
+              "urls": [
+                "https://example.com/a",
+                "https://example.org/b",
+                "https://example.com/c"
+              ]
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "missing_info",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "source_inventory",
+          "args": {
+            "urls": [
+              "https://example.com/a",
+              "https://example.org/b",
+              "https://example.com/c"
+            ]
+          },
+          "result": {
+            "tool": "source_inventory",
+            "source_count": 3,
+            "domain_count": 2,
+            "groups": [
+              {
+                "domain": "example.com",
+                "urls": [
+                  "https://example.com/a",
+                  "https://example.com/c"
+                ]
+              },
+              {
+                "domain": "example.org",
+                "urls": [
+                  "https://example.org/b"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "GM05_cancel_publish",
+      "phase": "B",
+      "suite": "group",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "what_it_tests": "Tôn trọng lời từ chối và không gọi công cụ ghi khi yêu cầu đã bị hủy."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Đăng lên Telegram nội dung: Bản tin thử nghiệm."
+        },
+        {
+          "role": "assistant",
+          "content": "Bạn xác nhận gửi nội dung này lên Telegram chứ?"
+        },
+        {
+          "role": "user",
+          "content": "Không, hủy gửi đi."
+        }
+      ],
+      "expect": {
+        "no_tool": true,
+        "behavior": "cancel"
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [],
+        "actual_text": "Đã hủy hành động gửi nội dung lên Telegram. Nếu bạn cần hỗ trợ gì khác, hãy cho tôi biết!",
+        "case_failure_type": "wrong_boundary",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": []
+    }
+  ]
+}

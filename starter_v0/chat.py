@@ -88,6 +88,7 @@ def run_model_tool_loop(
     working_messages = list(messages)
     rounds: list[dict[str, Any]] = []
     all_tool_events: list[dict[str, Any]] = []
+    allowed_tools = {tool["function"]["name"] for tool in tools}
 
     for round_index in range(1, max_tool_rounds + 1):
         response = provider.complete(working_messages, tools, model=model, temperature=0.0)
@@ -113,7 +114,14 @@ def run_model_tool_loop(
 
         for call in calls:
             print(f"🔧 {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
-            event = execute_tool_call(call)
+            if call.name in allowed_tools:
+                event = execute_tool_call(call)
+            else:
+                event = {
+                    "tool": call.name,
+                    "args": call.args,
+                    "result": {"error": "unavailable_tool", "message": "This tool is unavailable in the current session."},
+                }
             round_record["tool_results"].append(event)
             all_tool_events.append(event)
 

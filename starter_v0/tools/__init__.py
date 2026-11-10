@@ -15,6 +15,7 @@ from .fetch.tool import read_url
 from .format.tool import render_digest
 from .policy.tool import search_company_policy
 from .social_search.tool import search_tweets
+from .source_inventory.tool import inventory_sources
 from .send.tool import send_telegram
 from .lookup.tool import web_search
 
@@ -35,8 +36,7 @@ TOOL_FUNCTIONS = {
     "policy": search_company_policy,
     "papers": arxiv_search,
     "paper_text": get_arxiv_paper_text,
-    # TODO(student): register your new tool here, e.g. "my_tool": my_tool_function,
-    # then declare it in artifacts/tools.yaml and run `pytest tests/test_tool_contract.py`.
+    "source_inventory": inventory_sources,
 }
 
 

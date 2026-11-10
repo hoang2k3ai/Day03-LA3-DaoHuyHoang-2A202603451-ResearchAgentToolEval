@@ -3,5 +3,102 @@
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_inventory_known_urls",
+      "phase": "B",
+      "query": "Gom hai nguồn sau theo tên miền: https://example.com/a và https://example.org/b.",
+      "failure_type": "wrong_tool",
+      "expect": {"tool_calls": [{"name": "source_inventory", "args": {"urls": ["https://example.com/a", "https://example.org/b"]}}]},
+      "metadata": {"what_it_tests": "Kiểm kê URL có sẵn thay vì gọi web hoặc đọc từng trang."}
+    },
+    {
+      "id": "G02_exact_handle_and_count",
+      "phase": "B",
+      "query": "Lấy đúng 2 bài đăng mới nhất của tài khoản @NASA trên X.",
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "timeline", "args": {"screenname": "NASA", "limit": 2}}]},
+      "metadata": {"what_it_tests": "Bỏ ký tự @ và giữ số bài đăng được yêu cầu."}
+    },
+    {
+      "id": "G03_month_news",
+      "phase": "B",
+      "query": "Tìm 3 tin tức về pin thể rắn trong tháng này trên web.",
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "lookup", "args": {"topic": "news", "timeframe": "month", "max_results": 3}}]},
+      "metadata": {"what_it_tests": "Kết hợp phạm vi tháng, loại tin tức và số kết quả."}
+    },
+    {
+      "id": "G04_recent_papers",
+      "phase": "B",
+      "query": "Tìm 2 paper về retrieval augmented generation trên arXiv, ưu tiên ngày nộp mới nhất.",
+      "failure_type": "wrong_tool",
+      "expect": {"tool_calls": [{"name": "papers", "args": {"max_results": 2, "sort_by": "submittedDate"}}]},
+      "metadata": {"what_it_tests": "Chọn tìm kiếm arXiv và sắp xếp theo ngày nộp."}
+    },
+    {
+      "id": "G05_outside_research",
+      "phase": "B",
+      "query": "Đặt giúp mình hai vé xem phim tối mai.",
+      "failure_type": "out_of_scope",
+      "expect": {"no_tool": true, "behavior": "refuse"},
+      "metadata": {"what_it_tests": "Không gọi tool cho thao tác đặt vé ngoài phạm vi research."}
+    },
+    {
+      "id": "GM01_correct_url",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Đọc https://www.iana.org/domains/reserved giúp mình."},
+        {"role": "user", "content": "Mình gửi nhầm. Chỉ đọc https://www.iana.org/help/example-domains thôi."}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "fetch", "args": {"url": "https://www.iana.org/help/example-domains"}}]},
+      "metadata": {"what_it_tests": "Ưu tiên URL được sửa ở lượt cuối, không gọi thêm URL cũ."}
+    },
+    {
+      "id": "GM02_keep_topic_and_change_date",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Tìm tin web về robotics tháng này, tối đa 2 bài."},
+        {"role": "user", "content": "Giữ nguyên chủ đề và số bài, đổi sang tuần này thôi."}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "lookup", "args": {"query": "robotics", "topic": "news", "timeframe": "week", "max_results": 2}}]},
+      "metadata": {"what_it_tests": "Cập nhật timeframe và giữ lại những ràng buộc không thay đổi."}
+    },
+    {
+      "id": "GM03_social_top_to_latest",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Tìm 4 bài X phổ biến về Rust."},
+        {"role": "user", "content": "Đổi sang mới nhất, vẫn 4 bài về Rust."}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "social_search", "args": {"query": "Rust", "search_type": "Latest", "limit": 4}}]},
+      "metadata": {"what_it_tests": "Cập nhật thứ tự từ Top sang Latest trong hội thoại."}
+    },
+    {
+      "id": "GM04_inventory_from_history",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Danh sách nguồn mình có là https://example.com/a và https://example.org/b."},
+        {"role": "user", "content": "Thêm https://example.com/c. Cho mình số nguồn theo từng tên miền."}
+      ],
+      "failure_type": "missing_info",
+      "expect": {"tool_calls": [{"name": "source_inventory", "args": {"urls": ["https://example.com/a", "https://example.org/b", "https://example.com/c"]}}]},
+      "metadata": {"what_it_tests": "Giữ URL từ lượt trước và thêm URL mới vào cùng một lần kiểm kê."}
+    },
+    {
+      "id": "GM05_cancel_publish",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Đăng lên Telegram nội dung: Bản tin thử nghiệm."},
+        {"role": "assistant", "content": "Bạn xác nhận gửi nội dung này lên Telegram chứ?"},
+        {"role": "user", "content": "Không, hủy gửi đi."}
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {"no_tool": true, "behavior": "cancel"},
+      "metadata": {"what_it_tests": "Tôn trọng lời từ chối và không gọi công cụ ghi khi yêu cầu đã bị hủy."}
+    }
+  ]
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from inspect import signature
 from typing import Any
 
 from providers.base import ModelResponse, ToolCall
@@ -66,7 +67,6 @@ class AnthropicProvider:
             "model": model or self.default_model,
             "messages": chat_messages,
             "max_tokens": 1024,
-            "temperature": temperature,
         }
         if system:
             kwargs["system"] = system
@@ -76,7 +76,11 @@ class AnthropicProvider:
             if tool_choice == "required":
                 kwargs["tool_choice"] = {"type": "any"}
 
-        resp = Anthropic(api_key=api_key).messages.create(**kwargs)
+        create_message = Anthropic(api_key=api_key).messages.create
+        # Anthropic SDK v2 removed sampling parameters from Messages.
+        if "temperature" in signature(create_message).parameters:
+            kwargs["temperature"] = temperature
+        resp = create_message(**kwargs)
         text_parts: list[str] = []
         calls: list[ToolCall] = []
         for block in resp.content:
