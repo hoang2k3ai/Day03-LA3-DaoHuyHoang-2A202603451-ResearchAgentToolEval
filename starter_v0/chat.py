@@ -84,6 +84,8 @@ def run_model_tool_loop(
     tools: list[dict[str, Any]],
     model: str | None,
     max_tool_rounds: int,
+    defer_tool_names: set[str] | None = None,
+    log_tool_calls: bool = True,
 ) -> dict[str, Any]:
     working_messages = list(messages)
     rounds: list[dict[str, Any]] = []
@@ -112,7 +114,18 @@ def run_model_tool_loop(
         non_clarification_events: list[dict[str, Any]] = []
 
         for call in calls:
-            print(f"🔧 {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
+            if defer_tool_names and call.name in defer_tool_names:
+                rounds.append(round_record)
+                return {
+                    "status": "confirmation_required",
+                    "assistant_text": response.text or "This action needs your confirmation.",
+                    "rounds": rounds,
+                    "tool_events": all_tool_events,
+                    "pending_action": {"name": call.name, "args": call.args},
+                }
+
+            if log_tool_calls:
+                print(f"🔧 {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
             event = execute_tool_call(call)
             round_record["tool_results"].append(event)
             all_tool_events.append(event)

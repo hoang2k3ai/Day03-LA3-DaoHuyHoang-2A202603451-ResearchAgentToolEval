@@ -3,5 +3,30 @@
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_dedupe_research_items",
+      "phase": "B",
+      "suite": "group",
+      "query": "Loại kết quả trùng URL trong danh sách này, giữ lại kết quả xuất hiện đầu tiên: [{\"title\":\"Bài A\",\"url\":\"https://example.com/a\"},{\"title\":\"Bài A bản lặp\",\"url\":\"https://example.com/a\"},{\"title\":\"Bài B\",\"url\":\"https://example.com/b\"}]",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "dedupe",
+            "args": {
+              "items": [
+                {"title": "Bài A", "url": "https://example.com/a"},
+                {"title": "Bài A bản lặp", "url": "https://example.com/a"},
+                {"title": "Bài B", "url": "https://example.com/b"}
+              ]
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "Định tuyến yêu cầu loại kết quả nghiên cứu trùng URL sang dedupe và giữ nguyên danh sách đầu vào trong arguments."
+      }
+    }
+  ]
 }

@@ -123,3 +123,15 @@ tools:
         max_pages: {type: integer, default: 5, description: "Số trang"}
         max_chars: {type: integer, default: 8000, description: "Số ký tự"}
       required: [arxiv_url]
+
+  - name: dedupe
+    description: "Remove repeated research items by URL while keeping the first occurrence and original order. Use only when the user asks to deduplicate an already-collected list; items without URLs are preserved. Does not fetch or rank results."
+    parameters:
+      type: object
+      properties:
+        items:
+          type: array
+          description: "Previously collected research items; each item should be an object and may include a url."
+          items:
+            type: object
+      required: [items]
