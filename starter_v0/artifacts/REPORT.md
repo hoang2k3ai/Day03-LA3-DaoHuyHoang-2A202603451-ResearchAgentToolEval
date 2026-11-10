@@ -80,5 +80,7 @@ Chưa có transcript live chat nào được ghi nhận. Baseline cho thấy cá
 | Phiên bản | Provider/model | Suite | Kết quả | Run |
 |---|---|---|---|---|
 | v0 | OpenAI / `gpt-4o-mini` | base | 14/20 (0.70) | [`v0_B_base_openai_20261110T202536717156.json`](../runs/v0_B_base_openai_20261110T202536717156.json) |
+| v1 | Anthropic / `claude-haiku-4-5-20251001` | base | 0/20 đo được; 20/20 provider errors | [`v1_B_base_anthropic_20261110T205046573694.json`](../runs/v1_B_base_anthropic_20261110T205046573694.json) |
+| v1 | OpenRouter / `openai/gpt-4o-mini` | base | 18/20 (0.90); routing 0.90; argument 0.90; multiturn 5/6 (0.8333) | [`v1_B_base_openrouter_20261110T205310446562.json`](../runs/v1_B_base_openrouter_20261110T205310446562.json) |
 
-Chưa có run v1–v3 hoặc local model trong `version_log.csv`; vì vậy chưa thể lập so sánh tiến triển hay kết luận về hiệu quả của các thay đổi.
+Run OpenRouter v1 cải thiện case accuracy so với baseline v0, nhưng khác provider nên cần thận trọng khi quy kết cải thiện cho thay đổi artifact. Run Anthropic v1 không có case đo được do lỗi provider; không thể dùng kết quả này để so sánh chất lượng.
