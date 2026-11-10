@@ -36,11 +36,35 @@ Research Agent hỗ trợ tra cứu bài đăng trên X, tìm tin trên web, đ�
 - “Tìm bài báo khoa học về RAG.”
 - “Gửi bản tin này lên Telegram” (agent phải hỏi xác nhận trước, không gửi ngay).
 
-**Link dùng thử:** https://vietchat-delta.vercel.app/ — trang trả về HTTP 200, nhưng backend mà trang gọi (`trycloudflare.com` cũ) đã ngừng hoạt động. Muốn dùng được cần chạy lại `server.py`, mở tunnel mới, rồi build lại frontend với `NEXT_PUBLIC_BACKEND_URL` mới. Xem mục 7 trong `TEAM.md`.
+**Link dùng thử:** https://vietchat-delta.vercel.app/ (frontend Vercel). Backend: `server.py` + Cloudflare Tunnel; frontend gọi backend qua `NEXT_PUBLIC_BACKEND_URL` (ghi cứng lúc build), nên mỗi lần đổi tunnel cần đặt lại biến này và redeploy. Backend đã kiểm tra cục bộ, xem B6.
+
+### Chi tiết trang dùng thử
+
+Nội dung lấy từ HTML tĩnh của https://vietchat-delta.vercel.app/#home (kiểm tra 2026-11-10). Lúc đó trang hiển thị "Chưa kết nối" nên chưa chat thật được; đây là mô tả giao diện, không phải kết quả agent trả lời.
+
+- **Nhận diện:** tiêu đề "Nghiên cứu — Trợ lý nghiên cứu AI", tên app "Research Agent", khẩu hiệu "Nghiên cứu nhanh hơn. Hiểu sâu hơn.", chân trang "Phiên bản v0".
+- **Điều hướng:** "Trang chủ" (`#home`), "Cuộc trò chuyện mới", "Công cụ"; sidebar có "Hôm nay" và "Khám phá cùng Research Agent". Trang không có route riêng cho "dùng thử".
+- **Trạng thái:** hiển thị "Chạy backend" / "Chưa kết nối" (phụ thuộc backend và tunnel đang chạy).
+- **Màn hình chat:** lời chào "Xin chào! Hôm nay tôi giúp gì cho bạn?", mục "Gợi ý nhanh" và ô nhập ở cuối trang.
+- **Câu hỏi mẫu trên trang** (cột tool là suy ra từ mô tả tool của nhóm, không hiển thị trên trang):
+
+| Nhóm | Câu hỏi mẫu | Tool dự kiến |
+|---|---|---|
+| Tin tức và tìm kiếm | "Tin tức AI hôm nay có gì nổi bật?" | `lookup` (news) |
+| Tin tức và tìm kiếm | "Mọi người đang nói gì về Claude Opus trên mạng xã hội tuần này?" | `social_search` |
+| Tweet | "Tweet mới nhất của Sam Altman là gì?" | `timeline` |
+| Thời gian | "Tin AI tuần trước là từ ngày nào đến ngày nào?" | `resolve_time_range` |
+| Tính toán | "Tính giúp mình 15% của 2 tỷ 400 triệu" | `calculate` |
+| Link | "Lấy hết link trong đoạn này: https://a.com/x và https://b.org/y" | `extract_links` |
+| Định nghĩa | "Trí tuệ nhân tạo là gì?" | `wiki_summary` |
+| Ghi chú | "Lưu bản tin này vào ghi chú giúp mình" | `save_note` (hỏi xác nhận) |
+| Hỏi lại | "Đăng bản tin này lên Telegram giúp mình" | `clarify` rồi `send` |
+
+- **Kịch bản thử:** hỏi "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." rồi "Tóm tắt lại 3 tin đó" rồi "Gửi bản tin này lên Telegram" (agent phải hỏi xác nhận, không gửi ngay).
 
 ## Phần B — Chi tiết và bằng chứng
 
-Mọi số liệu dưới đây lấy từ file trong `runs/` và `artifacts/version_log.csv`. Các phiên bản chưa có run JSON trong repo không được đưa vào bảng (xem B7).
+Mọi số liệu dưới đây lấy từ file trong `runs/` và `artifacts/version_log.csv`. Chỉ các phiên bản có run JSON trong `runs/` được đưa vào báo cáo.
 
 ### B1. Baseline v0
 
@@ -74,14 +98,16 @@ Các lỗi tập trung ở ba điểm: prompt v0 khuyến khích đoán khi thi�
 ### B4. Eval cases
 
 - **Base eval** (`data/eval_base.json`): 20 case cố định, không sửa trong báo cáo này.
-- **Group eval** (`data/eval_group.json`): 16 case do nhóm viết (9 single-turn, 7 multi-turn), đủ yêu cầu tối thiểu 5 + 5. Mỗi case có `failure_type` và `metadata.what_it_tests`. *Chưa có run JSON nào của group eval trong `runs/`, nên chưa có số liệu đo được cho bộ này.*
+- **Group eval** (`data/eval_group.json`): 16 case do nhóm viết (9 single-turn, 7 multi-turn), đủ yêu cầu tối thiểu 5 + 5. Mỗi case có `failure_type` và `metadata.what_it_tests`; có case route tới cả 6 tool nhóm, `policy`, `papers`, `paper_text` và ranh giới xác nhận của `send` / `save_note`.
+  - Run v3 (Anthropic Haiku 4.5): [`v3_B_group_anthropic_20261110T215305046582.json`](../runs/v3_B_group_anthropic_20261110T215305046582.json). Kết quả: 14/16 (0.875); routing 0.9375; argument 0.875; multiturn 0.857; 0 provider error.
+  - Lỗi: `G05_fetch_url` (`wrong_tool`: gọi `paper_text` thay vì `fetch` cho arXiv URL) và `G16_save_note_needs_confirm` (`wrong_boundary`: `clarify` dùng `response_type=text` thay vì `yes_no`).
 
 ### B5. Kiểm tra lỗi tool
 
-Hiện trạng `pytest` (chạy ngày 2026-11-10):
-- `tests/test_tool_contract.py` + `tests/test_tools_examples.py`: **18 failed, 74 passed**. Toàn bộ 18 lỗi đến từ 6 tool nhóm tự viết (`calculate`, `dedupe_items`, `extract_links`, `resolve_time_range`, `save_note`, `wiki_summary`): chưa có `TOOL.md` trong thư mục tool, và chưa đăng ký trong `tools/__init__.py` (`TOOL_FUNCTIONS`).
-- `tests/test_tools_todo.py`: **lỗi khi thu thập test** (`ModuleNotFoundError: tools.dedupe_items.tool`), vì các thư mục tool nhóm bị `.gitignore` và không có trong repo đã commit.
-- Không có regression test nào được ghi nhận cho bug của tool có sẵn.
+`pytest` (2026-11-10): **126 passed, 0 skipped, 0 failed**.
+- `tests/test_tools_todo.py`: đã thay toàn bộ stub bằng test thật (happy path, input xấu như chuỗi rỗng/sai kiểu/ngoài enum, nhánh lỗi trả error dict, và assert request gửi đi).
+- 6 tool nhóm đều có `tool.py`, `TOOL.md`, đăng ký trong `tools/__init__.py` và `tools.yaml`; mỗi tool ≥3 test. `tests/test_tool_contract.py` xanh cho cả 16 tool.
+- Thư mục 6 tool nhóm không bị `.gitignore` chặn (`git check-ignore` không khớp), nên được nộp cùng repo.
 
 ### B6. Live chat và reflection
 
@@ -92,7 +118,7 @@ Hiện trạng `pytest` (chạy ngày 2026-11-10):
 
 Lưu ý: transcript này mang nhãn v3, nhưng `tools_hash` là bản 16 tool trước khi sửa `resolve_time_range`, nên lượt 1 còn gọi `resolve_time_range` trước `lookup`. Transcript không khớp hoàn toàn với run v3 trong B7.
 
-**Test trên giao diện Vercel:** chưa thực hiện được. Backend trỏ tới tunnel đã chết (xem Phần A), và Chrome extension không kết nối được trong phiên kiểm tra.
+**Test backend của chatbot (2026-11-10):** chạy `server.py` cục bộ, `/api/health` OK, `/api/tools` trả 16 tool, CORS cho `https://vietchat-delta.vercel.app`. Hỏi "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." trả 3 tin có nguồn; hỏi "Tính 15% của 2400000" gọi `calculate` và trả 360,000. Tunnel mới: `https://chrome-prominent-damaged-geek.trycloudflare.com`.
 
 **Reflection:**
 - Thêm tool mới có thể làm giảm routing. Tool `resolve_time_range` được gọi trước `lookup` khi chưa có mô tả giới hạn rõ.
@@ -119,14 +145,8 @@ Phân tích:
 - **Không so sánh trực tiếp được** giữa v0–v2 (OpenRouter) và v3 (Anthropic) vì khác model. Để so sánh công bằng cần chạy v0 và v3 trên cùng một provider và model.
 - Các run Anthropic v1 và v2 lỗi 20/20 vì thiếu API key, nên không dùng được để đánh giá prompt/tool.
 
-**Thiếu so với tiêu chí lab:** `version_log.csv` chỉ có v0–v3. Các version cần thêm là v4 trở đi, nếu nhóm đã làm thì cần có run JSON và dòng log tương ứng.
+`version_log.csv` có 9 dòng: v0 (2 lần), v1 (2), v2 (2), v3 base và v3 group. Run Anthropic của v1 và v2 không có số liệu do lỗi key.
 
-**Small Local Model Challenge (Ollama): chưa làm.**
+### Small Local Model Challenge (Ollama)
 
-## Việc còn lại trước khi nộp
-
-- [ ] Sửa 6 tool nhóm để `pytest` xanh: thêm `TOOL.md`, đăng ký trong `tools/__init__.py`, và đảm bảo các thư mục tool không bị `.gitignore` chặn.
-- [ ] Chạy lại group eval và lưu run JSON vào `runs/`.
-- [ ] Ghi vào `version_log.csv` các version đã làm mà chưa có dòng (nếu có run JSON).
-- [ ] Dựng lại backend và frontend để test chatbot trên giao diện.
-- [ ] (Bonus) Small Local Model Challenge.
+Chưa có run local nào. Máy hiện chưa cài Ollama (không có `sudo`); đã tải bản Ollama cho Linux về `~/ollama` nhưng môi trường chặn việc giải nén và chạy binary tải về, nên không chạy được `ollama serve` và `ollama pull`. Máy có 8 core, 15 GB RAM, không GPU: dùng `llama3.2:3b` và `qwen2.5:3b`/`qwen2.5:7b`. Sau khi cài Ollama, chạy `run_eval.py --provider ollama --model <model> --version v3-<model> --suite base` cho từng model, rồi 2 vòng tối ưu `v4-local`, `v5-local` như README Step 7, và điền bảng cloud vs local tại đây.

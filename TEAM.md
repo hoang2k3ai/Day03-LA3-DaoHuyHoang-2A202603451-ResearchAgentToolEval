@@ -2,46 +2,33 @@
 
 - Team: HQHD
 - Members: Lê Hồng Quân, Võ Huy Hoàng, Hồ Văn Dũng, Vũ Mạnh Hoạch
-- Provider/model: Anthropic (gọi trực tiếp API, `--provider anthropic`), model mặc định trong code: `claude-haiku-4-5-20251001`
+- Provider/model: Anthropic (`--provider anthropic`), model `claude-haiku-4-5-20251001`; v0–v2 còn có run trên OpenAI/OpenRouter (`gpt-4o-mini`)
 
 ---
 
 ## Tóm tắt
 
-Nhóm xây dựng research agent tiếng Việt: agent nhận câu hỏi, chọn tool, gọi tool thật, rồi trả lời từ kết quả. Qua 10 vòng tối ưu (v0 → v10), nhóm sửa prompt và mô tả tool dựa trên log thật, đo bằng base eval (20 case cố định) và group eval (16 case do nhóm viết).
+Nhóm xây dựng research agent tiếng Việt: agent nhận câu hỏi, chọn tool, gọi tool thật, rồi trả lời từ kết quả. Prompt và mô tả tool được sửa qua 4 phiên bản (v0 → v3) dựa trên run JSON thật, đo bằng base eval (20 case cố định) và group eval (16 case do nhóm viết).
 
-Kết quả hiện tại (đã đối chiếu với repo, ngày 2026-11-10):
-- Base eval: **0.90 (18/20)** ở v3 (Haiku 4.5, Anthropic), run `runs/v3_B_base_anthropic_20261110T213326899474.json`. Run cao nhất trong repo là v2 OpenRouter, 0.95 (19/20).
-- Group eval: 16 case đã có trong `data/eval_group.json`, nhưng **chưa có run JSON nào** nên con số 0.875 chưa kiểm chứng được.
-- Unit test: **không xanh**. `pytest` hiện báo 18 failed (6 tool nhóm chưa có `TOOL.md` và chưa đăng ký) và lỗi khi thu thập `tests/test_tools_todo.py`. Số "126 passed" trong bản cũ không còn đúng.
+Kết quả (đối chiếu với `runs/` và `artifacts/version_log.csv`, ngày 2026-11-10):
 
-### Trạng thái xác minh
+| Hạng mục | Kết quả |
+|---|---|
+| Base eval v0 (OpenAI `gpt-4o-mini`) | 0.70 (14/20) |
+| Base eval v1 / v2 (OpenRouter `gpt-4o-mini`) | 0.90 (18/20) / 0.95 (19/20) |
+| Base eval v3 (Anthropic Haiku 4.5) | 0.90 (18/20), routing 0.95, multiturn 1.00 |
+| Group eval v3 (Anthropic Haiku 4.5) | 0.875 (14/16), routing 0.9375, multiturn 0.857 |
+| Unit test (`pytest`) | 126 passed, 0 skipped, 0 failed |
 
-- **Đã có bằng chứng trong repo:** v0, v1, v2, v3 (run JSON + dòng trong `artifacts/version_log.csv`).
-- **Chưa có bằng chứng trong repo:** v4–v10, group eval, số lượng test 126. Các mục này là mô tả của nhóm, cần run JSON và dòng log tương ứng trước khi nộp.
-- **Lệch với bản cũ:** `version_log.csv` hiện có 7 dòng (v0–v3), không phải 11 dòng v0–v10. Group eval là 9 single-turn và 7 multi-turn, không phải 10 và 6.
-- **Chatbot trên Vercel:** không chạy được. Backend `trycloudflare.com` đã chết; xem mục 7.
+Các phiên bản v4–v10 từ nhánh cũ đã được loại bỏ khỏi báo cáo. Lịch sử chính thức của nhóm là v0–v3 trong `version_log.csv`.
 
 ---
 
 ## 1. Tool của agent (16 tool)
 
-Tool có sẵn từ starter (10):
+Tool có sẵn từ starter (10): `clarify`, `timeline`, `social_search`, `lookup`, `fetch`, `format`, `send` (chỉ gửi khi `confirmed=true`), `policy`, `papers`, `paper_text`.
 
-| Tool | Làm gì |
-|---|---|
-| `clarify` | Hỏi lại người dùng khi thiếu thông tin hoặc cần xác nhận (`text` / `yes_no`) |
-| `timeline` | Lấy bài đăng gần đây của một tài khoản |
-| `social_search` | Tìm bài đăng theo từ khóa (Latest/Top) |
-| `lookup` | Tìm web, có `topic` (general/news) và `timeframe` |
-| `fetch` | Đọc nội dung một URL |
-| `format` | Trình bày các item đã có thành bản tin/bullet/thread |
-| `send` | Gửi text lên Telegram, chỉ khi `confirmed=true` (bonus) |
-| `policy` | Tìm trong tài liệu chính sách nội bộ (bonus) |
-| `papers` | Tìm bài báo arXiv (bonus) |
-| `paper_text` | Tải PDF arXiv và trích text (bonus) |
-
-Tool nhóm tự viết (6). Khai báo đã có trong `artifacts/tools.yaml`, nhưng **chưa** đăng ký trong `tools/__init__.py` và thư mục chưa có `TOOL.md` trong working tree (các thư mục bị `.gitignore`):
+Tool nhóm tự viết (6). Mỗi tool có `tool.py` và `TOOL.md` trong `tools/<tên>/`, đã đăng ký trong `tools/__init__.py` (`TOOL_FUNCTIONS`) và khai báo trong `artifacts/tools.yaml`. Các thư mục này không bị `.gitignore` chặn:
 
 | Tool | Làm gì |
 |---|---|
@@ -56,116 +43,93 @@ Tool nhóm đã thêm: 6 (vượt mức bắt buộc 1 và mức bonus >3). Cùn
 
 ---
 
-## 2. Lịch sử tối ưu prompt và tool declaration
+## 2. Lịch sử tối ưu (`artifacts/version_log.csv`)
 
-Mỗi vòng chỉ đổi một giả thuyết, ghi trong `artifacts/version_log.csv`. Hiện log chỉ có v0–v3; bảng dưới đây gồm cả v4–v10 do nhóm báo cáo nhưng chưa có log/run để kiểm chứng.
-
-| Version | Thay đổi | Base eval |
+| Version | Run | Kết quả |
 |---|---|---|
-| v0 | Baseline (prompt starter đã sửa các chỉ dẫn xấu) | 0.90 |
-| v1 | Viết lại description + convention args (đổi 2 file cùng lúc, vi phạm nguyên tắc) | 0.75, **bị bác bỏ** |
-| v2 | Một rule: gửi/đăng → `clarify yes_no` | 0.90, không tăng |
-| v3 | Mô tả `lookup.query`: chỉ chủ đề, không kèm thời gian | **0.95 (19/20)**, cao nhất khi chưa có 6 tool nhóm |
-| v4 | Thêm 6 tool nhóm vào `tools.yaml` | 0.70, **bị bác bỏ** (`resolve_time_range` bị gọi nhầm trước `lookup`) |
-| v5 | Thu hẹp mô tả `resolve_time_range` | 0.85 |
-| v6 | Thêm ví dụ GỌI / KHÔNG GỌI cho `resolve_time_range` | 0.90 |
-| v7 | Khôi phục prompt, mô tả đủ 16 tool | 0.90 |
-| v8 | Rule routing cho đủ 16 tool trong prompt | 0.90 |
-| v9 | `policy.query`: chỉ cụm từ chủ đề, không kèm "chính sách/quy định" | 0.90 (không hồi quy) |
-| v10 | Rule `send` / `save_note`: không hỏi chat ID hoặc tiêu đề, xác nhận luôn `yes_no` | 0.90 (không hồi quy) |
+| v0 | OpenAI `gpt-4o-mini`, base (2 lần, cùng kết quả) | 0.70 (14/20) |
+| v1 | OpenRouter `gpt-4o-mini`, base | 0.90 (18/20); lỗi R12, M06 |
+| v2 | OpenRouter `gpt-4o-mini`, base | 0.95 (19/20); lỗi R12 |
+| v3 | Anthropic Haiku 4.5, base | 0.90 (18/20); lỗi R06, R12 |
+| v3 | Anthropic Haiku 4.5, group | 0.875 (14/16); lỗi G05, G16 |
 
-Các bài học rút ra:
-- Thêm tool mới có thể làm giảm routing (v4), nên mô tả tool quan trọng hơn số lượng tool.
-- Một thay đổi hợp lý trên giấy có thể không có tác dụng (v2, R12): prompt không kiểm soát được tham số `response_type`.
-- Với 1 lần chạy mỗi case, chênh lệch 1 case (0.05) có thể là nhiễu; chưa đo lặp lại.
+Run Anthropic của v1 và v2 lỗi 20/20 do thiếu API key lúc đó, nên không dùng để so sánh.
+
+Bài học:
+- Thêm tool mới có thể làm giảm routing: ở v3, `resolve_time_range` bị gọi thay cho `lookup` (R06).
+- Prompt không kiểm soát được `response_type` của `clarify`: R12 và G16 vẫn dùng `text` thay vì `yes_no`.
+- Mỗi cấu hình chỉ chạy 1 lần, nên chênh 1 case (0.05) có thể là nhiễu.
+- Đổi provider/model làm đổi kết quả nhiều hơn đổi prompt, nên v0–v2 (OpenRouter) và v3 (Anthropic) không so sánh trực tiếp được.
 
 ---
 
 ## 3. Group eval (16 case)
 
-File: `data/eval_group.json` (chưa commit). Có **9 single-turn** và **7 multi-turn**, đạt yêu cầu ≥5 + ≥5. Mỗi case có `failure_type` và `metadata.what_it_tests`.
+File `data/eval_group.json`: **9 single-turn, 7 multi-turn**, mỗi case có `failure_type` và `metadata.what_it_tests`. Run: `runs/v3_B_group_anthropic_20261110T215305046582.json`.
 
-Kết quả các lần chạy (**chưa có run JSON trong repo, chưa kiểm chứng**):
+Kết quả v3: 14/16 pass, case 0.875, routing 0.9375, argument 0.875, multiturn 0.857.
 
-| Lần chạy | case_accuracy | multiturn_accuracy | Ghi chú |
-|---|---|---|---|
-| v8, case gốc | 0.50 (8/16) | 0.17 | 5 case thiếu ngữ cảnh |
-| v8, case đã sửa ngữ cảnh | 0.69 (11/16) | 0.57 | Chỉ đổi case, không đổi prompt |
-| v9 | 0.81 (13/16) | 0.71 | Sửa G03, G07 |
-| **v10** | **0.875 (14/16)** | **0.86** | Sửa G10 |
-
-**Sửa case (đã ghi trong `metadata.eval_fix`):** G06, G09, G10, G15, G16 được thêm đoạn kết quả/nội dung trong lượt trước, vì case giả định agent đã có dữ liệu đó nhưng thực tế không có. Kỳ vọng (`expect`) không đổi. Lần chạy đầu với case gốc được giữ làm mốc.
-
-**Còn lỗi:**
-- **G05**: prompt yêu cầu `paper_text` khi đã có arXiv URL, còn case kỳ vọng `fetch`. Mâu thuẫn giữa prompt và case, nhóm cần quyết định bên nào đúng.
-- **G16**: agent vẫn hỏi tiêu đề bằng `response_type=text` dù prompt đã yêu cầu `yes_no`. Dự kiến thử ở v11 (mô tả `save_note` trong `tools.yaml`), chưa làm.
+Còn lỗi:
+- **G05** (`wrong_tool`): gọi `paper_text` cho arXiv URL, case kỳ vọng `fetch`.
+- **G16** (`wrong_boundary`): `save_note` hỏi tiêu đề bằng `response_type=text`, kỳ vọng `yes_no`.
 
 ---
 
-## 4. Base eval (20 case, cố định)
+## 4. Kiểm thử tự động
 
-Chạy đầy đủ cho v0–v10. Kết quả cuối (v10): case_accuracy 0.90, tool_routing 0.95, argument 0.90, multi-turn 1.00. Lỗi còn lại: 1 `wrong_arg_value` và 1 `wrong_boundary`. Theo báo cáo trước đó, `wrong_boundary` là R12 (`clarify` dùng `text`, không phải `yes_no`); chưa kiểm tra lại từng case cho v10.
-
----
-
-## 5. Kiểm thử tự động
-
-- `pytest` (ngày 2026-11-10): **không xanh**. `test_tool_contract.py` + `test_tools_examples.py` báo 18 failed, 74 passed; `test_tools_todo.py` lỗi khi thu thập. Nguyên nhân: 6 tool nhóm chưa có `TOOL.md` và chưa đăng ký. Bản cũ ghi "126 passed" không còn đúng với working tree hiện tại.
-- `tests/test_tools_todo.py`: đã thay toàn bộ stub bằng test thật (happy path, input xấu, nhánh lỗi trả error dict, và kiểm tra request gửi đi).
-- Test cho 6 tool nhóm: `calculate` (3 test), `resolve_time_range` (3), `extract_links` (3), `dedupe_items` (4), `wiki_summary` (3), `save_note` (3).
-- `tests/test_tool_contract.py`: `tools.yaml` khớp với code và `TOOL.md`.
+`pytest`: **126 passed, 0 skipped, 0 failed**, chạy offline (conftest chặn mạng thật, HTTP mock bằng `fake_http`).
+- `tests/test_tools_todo.py`: đã điền toàn bộ stub bằng test thật.
+- Mỗi tool nhóm có ≥3 test: `calculate` (3), `resolve_time_range` (3), `extract_links` (3), `dedupe_items` (4), `wiki_summary` (3), `save_note` (3).
+- `tests/test_tool_contract.py`: `tools.yaml` khớp code và `TOOL.md`.
 
 ---
 
-## 6. Chạy thử trực tiếp (live chat)
+## 5. UI và triển khai
 
-Transcript: `transcripts/v3_anthropic_20261110T111846041319.transcript.json` (file không có trong working tree hiện tại, cần kiểm tra lại trước khi nộp), 3 lượt:
-1. "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." → gọi `lookup` (news, day), trả về 3 tin có link.
-2. "Tóm tắt lại 3 tin đó" → gọi `format` (brief), không tìm lại.
-3. "Gửi bản tin này lên Telegram" → hỏi xác nhận `clarify yes_no`, **không gửi**.
+- **Backend:** `starter_v0/server.py` (lấy từ nhánh `LeHongQuan_2A202603705`, chỉ lấy file server và `compare.html`). Chạy `python server.py --port 8000 --allowed-origin https://vietchat-delta.vercel.app`. Endpoint: `POST /api/chat`, `GET /api/health`, `GET /api/tools`, `GET /api/versions`.
+- **Đã kiểm tra backend cục bộ (2026-11-10):** `/api/health` OK, `/api/tools` trả 16 tool; hỏi "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." trả 3 tin có nguồn; hỏi "Tính 15% của 2400000" gọi `calculate` và trả 360,000.
+- **Tunnel:** `cloudflared tunnel --url http://127.0.0.1:8000` cho ra `https://chrome-prominent-damaged-geek.trycloudflare.com` (tạm thời, mất khi tắt `cloudflared`).
+- **Frontend:** https://vietchat-delta.vercel.app/ (HTTP 200). Mã nguồn frontend không nằm trong repo. Frontend đọc `NEXT_PUBLIC_BACKEND_URL` lúc build, nên mỗi lần đổi tunnel cần đặt lại biến này trên Vercel và redeploy.
+- **Trang so sánh:** `starter_v0/compare.html`, phục vụ qua `/compare`.
 
-Lưu ý: transcript mang nhãn v3 nhưng `tools_hash` là bản 16 tool trước khi sửa `resolve_time_range`, nên lượt 1 còn gọi `resolve_time_range` trước `lookup`.
+**Chi tiết trang dùng thử**
+
+Nội dung lấy từ HTML tĩnh của https://vietchat-delta.vercel.app/#home (kiểm tra 2026-11-10). Lúc đó trang hiển thị "Chưa kết nối" nên chưa chat thật được; đây là mô tả giao diện, không phải kết quả agent trả lời.
+
+- **Nhận diện:** tiêu đề "Nghiên cứu — Trợ lý nghiên cứu AI", tên app "Research Agent", khẩu hiệu "Nghiên cứu nhanh hơn. Hiểu sâu hơn.", chân trang "Phiên bản v0".
+- **Điều hướng:** "Trang chủ" (`#home`), "Cuộc trò chuyện mới", "Công cụ"; sidebar có "Hôm nay" và "Khám phá cùng Research Agent". Trang không có route riêng cho "dùng thử".
+- **Trạng thái:** hiển thị "Chạy backend" / "Chưa kết nối" (phụ thuộc backend và tunnel đang chạy).
+- **Màn hình chat:** lời chào "Xin chào! Hôm nay tôi giúp gì cho bạn?", mục "Gợi ý nhanh" và ô nhập ở cuối trang.
+- **Câu hỏi mẫu trên trang** (cột tool là suy ra từ mô tả tool của nhóm, không hiển thị trên trang):
+
+| Nhóm | Câu hỏi mẫu | Tool dự kiến |
+|---|---|---|
+| Tin tức và tìm kiếm | "Tin tức AI hôm nay có gì nổi bật?" | `lookup` (news) |
+| Tin tức và tìm kiếm | "Mọi người đang nói gì về Claude Opus trên mạng xã hội tuần này?" | `social_search` |
+| Tweet | "Tweet mới nhất của Sam Altman là gì?" | `timeline` |
+| Thời gian | "Tin AI tuần trước là từ ngày nào đến ngày nào?" | `resolve_time_range` |
+| Tính toán | "Tính giúp mình 15% của 2 tỷ 400 triệu" | `calculate` |
+| Link | "Lấy hết link trong đoạn này: https://a.com/x và https://b.org/y" | `extract_links` |
+| Định nghĩa | "Trí tuệ nhân tạo là gì?" | `wiki_summary` |
+| Ghi chú | "Lưu bản tin này vào ghi chú giúp mình" | `save_note` (hỏi xác nhận) |
+| Hỏi lại | "Đăng bản tin này lên Telegram giúp mình" | `clarify` rồi `send` |
+
+- **Kịch bản thử:** hỏi "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." rồi "Tóm tắt lại 3 tin đó" rồi "Gửi bản tin này lên Telegram" (agent phải hỏi xác nhận, không gửi ngay).
 
 ---
 
-## 7. UI và triển khai
-
-- **Backend**: `starter_v0/server.py`, chạy `python server.py --port 8000`. Các endpoint: `POST /api/chat`, `GET /api/health`, `GET /api/tools`, `GET /api/versions`. CORS có thể cấu hình qua `--allowed-origin`.
-- **Frontend**: hosted trên Vercel, link https://vietchat-delta.vercel.app/ (trả về HTTP 200 khi kiểm tra). Mã nguồn frontend **không nằm trong repo này**.
-- **Backend hiện tại không kết nối được**: frontend được build với `NEXT_PUBLIC_BACKEND_URL` mặc định là `https://veterinary-heating-programs-resident.trycloudflare.com`, và tunnel này không còn phân giải được DNS. Muốn chạy lại: chạy `server.py` (lấy từ nhánh `origin/LeHongQuan_2A202603705`, file không có trên `main`), mở tunnel mới, đặt `NEXT_PUBLIC_BACKEND_URL` trên Vercel và **redeploy** (biến `NEXT_PUBLIC_*` được ghi cứng lúc build).
-- **Tunnel**: backend được expose bằng Cloudflare Tunnel (`cloudflared tunnel --url http://127.0.0.1:8000`). Link tunnel là tạm thời, sống theo phiên.
-- **Trang so sánh**: `starter_v0/compare.html`, so sánh các version.
-- **Demo**: kịch bản trong `artifacts/DEMO.md`.
-
----
-
-## 8. Bonus
+## 6. Bonus
 
 | Bonus | Trạng thái |
 |---|---|
-| UI + >3 tool mới | **Đạt** (UI có link; 6 tool mới) |
-| `send` có xác nhận | Code và test đạt (`confirmed=false` → không gửi, có test). **Chưa gửi thật**: thiếu `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`, admin đã khóa quyền remote |
-| `policy`, `papers`, `paper_text` | Đã có tool và unit test; chưa có eval riêng |
-| Small Local Model Challenge (Ollama) | **Chưa làm**: chưa cài Ollama, chưa chạy model local nào |
+| UI + >3 tool mới | Đạt (UI Vercel + backend; 6 tool mới) |
+| `send` có xác nhận | Code và test đạt (`confirmed=false` thì không gửi); chưa gửi Telegram thật vì thiếu `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` |
+| `policy`, `papers`, `paper_text` | Có tool, unit test, và case trong group eval (G02, G03, G06, G07) |
+| Small Local Model (Ollama) | Chưa chạy được; xem `REPORT.md` B7 |
 
 ---
 
-## 9. Việc còn lại
-
-- [ ] Sửa G16 (v11), hoặc ghi nhận là lỗi còn lại trong báo cáo.
-- [ ] Nhóm quyết định G05: `paper_text` hay `fetch` cho arXiv URL.
-- [ ] Chạy lại base eval và group eval ít nhất 2 lần để đo nhiễu (hiện mỗi case chỉ chạy 1 lần).
-- [x] `artifacts/REPORT.md` Phần B đã cập nhật theo run JSON thật (B1–B7). Còn thiếu: B7 local model.
-- [ ] Sửa 6 tool nhóm để `pytest` xanh (`TOOL.md`, `tools/__init__.py`, không bị `.gitignore`).
-- [ ] Lưu run JSON cho group eval và các version v4–v10 (hoặc gỡ các số liệu đó khỏi báo cáo).
-- [ ] Test chatbot trên Vercel: cần backend và redeploy (xem mục 7).
-- [ ] Bonus local model (tùy chọn).
-- [ ] Commit và nộp: `runs/`, `transcripts/`, các thư mục tool mới, `server.py`, `compare.html`, `TEAM.md`, `artifacts/`. Mã nguồn frontend cần nộp riêng nếu yêu cầu.
-- [ ] Ghi chú: trong lúc làm v3, `REPORT.md` bị một tiến trình khác sửa, làm hash v3 không khớp với file hiện tại (đã ghi trong B6).
-
----
-
-## 10. Ghi chú về dữ liệu
+## 7. Ghi chú về dữ liệu
 
 - Không commit `.env` và không ghi API key vào tài liệu.
-- Các bản sửa case (`eval_fix`) là thay đổi do nhóm tự làm, đã ghi rõ trong file case và trong báo cáo.
+- Run từ nhánh cũ (v4–v10, v0–v3 Anthropic) không được đưa vào repo này.
