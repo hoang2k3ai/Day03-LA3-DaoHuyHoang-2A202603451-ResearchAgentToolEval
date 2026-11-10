@@ -195,3 +195,80 @@ tools:
         max_pages: {type: integer, default: 5, description: "Maximum number of PDF pages to extract. Default 5."}
         max_chars: {type: integer, default: 8000, description: "Maximum number of characters of extracted text to return. Default 8000."}
       required: [arxiv_url]
+
+  # ---------------- Team-added tools ----------------
+  - name: calculate
+    description: >
+      Calculate a pure arithmetic expression (+ - * / % ** and parentheses).
+      WHEN TO USE: The user asks for a percentage, sum, ratio, or unit conversion
+      using numbers they gave, for example in a news digest.
+      WHEN NOT TO USE: Factual questions, searches, or any expression that contains
+      words. Never use it to estimate or invent numbers.
+    parameters:
+      type: object
+      properties:
+        expression: {type: string, default: "", description: "Pure arithmetic expression using only digits, operators (+ - * / % **) and parentheses, e.g. '0.15*2400000'. No letters."}
+      required: [expression]
+
+  - name: resolve_time_range
+    description: >
+      Convert ONE Vietnamese time phrase into an explicit calendar date range (Vietnam time).
+      WHEN TO USE: Only when the user asks which dates a period covers, e.g. 'tuần này là từ ngày nào đến ngày nào?'.
+      WHEN NOT TO USE: Finding news or posts. For 'tin AI hôm nay' call lookup(query='AI', topic='news', timeframe='day') directly.
+      For 'tin công nghệ tuần này' call lookup(query='công nghệ', topic='news', timeframe='week') directly.
+      This tool returns dates only and never searches. Never call it and then stop without the search tool.
+    parameters:
+      type: object
+      properties:
+        phrase: {type: string, default: "", description: "Exactly one of: hôm nay, hôm qua, tuần này, tuần trước, tháng này, năm nay."}
+      required: [phrase]
+
+  - name: extract_links
+    description: >
+      Extract every http(s) link from text the user pasted.
+      WHEN TO USE: The user pastes a block of text containing one or more links and wants them listed or processed.
+      WHEN NOT TO USE: Reading what a link says (use fetch). Searching for links (use lookup or social_search).
+      Never add links that are not in the text.
+    parameters:
+      type: object
+      properties:
+        text: {type: string, default: "", description: "The pasted text that contains the links."}
+      required: [text]
+
+  - name: dedupe_items
+    description: >
+      Remove duplicate results from a list of search items (same URL after normalization, or same title).
+      WHEN TO USE: After lookup or social_search returned items that look repetitive, and before format.
+      WHEN NOT TO USE: Gathering new information; this tool never searches. Do not use it on items no tool returned.
+    parameters:
+      type: object
+      properties:
+        items: {type: array, default: [], items: {type: object}, description: "Result items returned by lookup or social_search. Each item is an object with title and url. Pass them exactly as returned; never invent items."}
+      required: [items]
+
+  - name: wiki_summary
+    description: >
+      Get the short Wikipedia summary of a topic (person, place, company, concept) to answer 'what is X'.
+      WHEN TO USE: Background or definition questions about a named entity.
+      WHEN NOT TO USE: Today's news or recent events (use lookup with topic=news); social posts (use social_search or timeline);
+      a specific URL (use fetch). If the topic is unclear, use clarify first.
+    parameters:
+      type: object
+      properties:
+        topic: {type: string, default: "", description: "Topic as a short noun phrase, e.g. 'Trí tuệ nhân tạo' or 'Sam Altman'. Never pass a sentence or a URL."}
+        lang: {type: string, enum: [vi, en], default: "vi", description: "vi (default) for Vietnamese Wikipedia; en only when the user asks for English or the topic is mainly known in English."}
+      required: [topic]
+
+  - name: save_note
+    description: >
+      Save a markdown note into the project's notes folder. This writes a local file.
+      WHEN TO USE: Only after the user has explicitly agreed in this conversation to save this exact note.
+      WHEN NOT TO USE: Drafting or previewing the note. If the user has not confirmed, first call clarify with response_type=yes_no.
+      Never save without confirmation.
+    parameters:
+      type: object
+      properties:
+        title: {type: string, default: "", description: "Short note title, used as the heading."}
+        content: {type: string, default: "", description: "Markdown body of the note. Must match what the user approved."}
+        confirmed: {type: boolean, default: false, description: "Set to true ONLY after the user has explicitly agreed to save this note. Without it nothing is saved."}
+      required: [title, content]

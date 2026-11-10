@@ -10,10 +10,17 @@
 
 Nhóm xây dựng research agent tiếng Việt: agent nhận câu hỏi, chọn tool, gọi tool thật, rồi trả lời từ kết quả. Qua 10 vòng tối ưu (v0 → v10), nhóm sửa prompt và mô tả tool dựa trên log thật, đo bằng base eval (20 case cố định) và group eval (16 case do nhóm viết).
 
-Kết quả hiện tại:
-- Base eval: **0.90 (18/20)**, không hồi quy qua v8, v9, v10.
-- Group eval: **0.875 (14/16)** ở v10 (từ 0.50 ở v8 với case gốc).
-- Unit test: **126 passed, 0 skipped**.
+Kết quả hiện tại (đã đối chiếu với repo, ngày 2026-11-10):
+- Base eval: **0.90 (18/20)** ở v3 (Haiku 4.5, Anthropic), run `runs/v3_B_base_anthropic_20261110T213326899474.json`. Run cao nhất trong repo là v2 OpenRouter, 0.95 (19/20).
+- Group eval: 16 case đã có trong `data/eval_group.json`, nhưng **chưa có run JSON nào** nên con số 0.875 chưa kiểm chứng được.
+- Unit test: **không xanh**. `pytest` hiện báo 18 failed (6 tool nhóm chưa có `TOOL.md` và chưa đăng ký) và lỗi khi thu thập `tests/test_tools_todo.py`. Số "126 passed" trong bản cũ không còn đúng.
+
+### Trạng thái xác minh
+
+- **Đã có bằng chứng trong repo:** v0, v1, v2, v3 (run JSON + dòng trong `artifacts/version_log.csv`).
+- **Chưa có bằng chứng trong repo:** v4–v10, group eval, số lượng test 126. Các mục này là mô tả của nhóm, cần run JSON và dòng log tương ứng trước khi nộp.
+- **Lệch với bản cũ:** `version_log.csv` hiện có 7 dòng (v0–v3), không phải 11 dòng v0–v10. Group eval là 9 single-turn và 7 multi-turn, không phải 10 và 6.
+- **Chatbot trên Vercel:** không chạy được. Backend `trycloudflare.com` đã chết; xem mục 7.
 
 ---
 
@@ -34,7 +41,7 @@ Tool có sẵn từ starter (10):
 | `papers` | Tìm bài báo arXiv (bonus) |
 | `paper_text` | Tải PDF arXiv và trích text (bonus) |
 
-Tool nhóm tự viết (6), mỗi tool có `TOOL.md`, đăng ký trong `tools/__init__.py` và `artifacts/tools.yaml`:
+Tool nhóm tự viết (6). Khai báo đã có trong `artifacts/tools.yaml`, nhưng **chưa** đăng ký trong `tools/__init__.py` và thư mục chưa có `TOOL.md` trong working tree (các thư mục bị `.gitignore`):
 
 | Tool | Làm gì |
 |---|---|
@@ -51,7 +58,7 @@ Tool nhóm đã thêm: 6 (vượt mức bắt buộc 1 và mức bonus >3). Cùn
 
 ## 2. Lịch sử tối ưu prompt và tool declaration
 
-Mỗi vòng chỉ đổi một giả thuyết, ghi trong `artifacts/version_log.csv` (11 dòng, v0–v10).
+Mỗi vòng chỉ đổi một giả thuyết, ghi trong `artifacts/version_log.csv`. Hiện log chỉ có v0–v3; bảng dưới đây gồm cả v4–v10 do nhóm báo cáo nhưng chưa có log/run để kiểm chứng.
 
 | Version | Thay đổi | Base eval |
 |---|---|---|
@@ -76,9 +83,9 @@ Các bài học rút ra:
 
 ## 3. Group eval (16 case)
 
-File: `data/eval_group.json`. Có **10 single-turn** và **6 multi-turn**, đạt yêu cầu ≥5 + ≥5. Mỗi case có `failure_type` và `metadata.what_it_tests`.
+File: `data/eval_group.json` (chưa commit). Có **9 single-turn** và **7 multi-turn**, đạt yêu cầu ≥5 + ≥5. Mỗi case có `failure_type` và `metadata.what_it_tests`.
 
-Kết quả các lần chạy:
+Kết quả các lần chạy (**chưa có run JSON trong repo, chưa kiểm chứng**):
 
 | Lần chạy | case_accuracy | multiturn_accuracy | Ghi chú |
 |---|---|---|---|
@@ -103,7 +110,7 @@ Chạy đầy đủ cho v0–v10. Kết quả cuối (v10): case_accuracy 0.90, 
 
 ## 5. Kiểm thử tự động
 
-- `pytest`: **126 passed, 0 skipped, 0 failed**. Chạy offline, chặn mạng thật (conftest), HTTP được mock bằng `fake_http`.
+- `pytest` (ngày 2026-11-10): **không xanh**. `test_tool_contract.py` + `test_tools_examples.py` báo 18 failed, 74 passed; `test_tools_todo.py` lỗi khi thu thập. Nguyên nhân: 6 tool nhóm chưa có `TOOL.md` và chưa đăng ký. Bản cũ ghi "126 passed" không còn đúng với working tree hiện tại.
 - `tests/test_tools_todo.py`: đã thay toàn bộ stub bằng test thật (happy path, input xấu, nhánh lỗi trả error dict, và kiểm tra request gửi đi).
 - Test cho 6 tool nhóm: `calculate` (3 test), `resolve_time_range` (3), `extract_links` (3), `dedupe_items` (4), `wiki_summary` (3), `save_note` (3).
 - `tests/test_tool_contract.py`: `tools.yaml` khớp với code và `TOOL.md`.
@@ -112,7 +119,7 @@ Chạy đầy đủ cho v0–v10. Kết quả cuối (v10): case_accuracy 0.90, 
 
 ## 6. Chạy thử trực tiếp (live chat)
 
-Transcript: `transcripts/v3_anthropic_20261110T111846041319.transcript.json`, 3 lượt:
+Transcript: `transcripts/v3_anthropic_20261110T111846041319.transcript.json` (file không có trong working tree hiện tại, cần kiểm tra lại trước khi nộp), 3 lượt:
 1. "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." → gọi `lookup` (news, day), trả về 3 tin có link.
 2. "Tóm tắt lại 3 tin đó" → gọi `format` (brief), không tìm lại.
 3. "Gửi bản tin này lên Telegram" → hỏi xác nhận `clarify yes_no`, **không gửi**.
@@ -125,6 +132,7 @@ Lưu ý: transcript mang nhãn v3 nhưng `tools_hash` là bản 16 tool trước
 
 - **Backend**: `starter_v0/server.py`, chạy `python server.py --port 8000`. Các endpoint: `POST /api/chat`, `GET /api/health`, `GET /api/tools`, `GET /api/versions`. CORS có thể cấu hình qua `--allowed-origin`.
 - **Frontend**: hosted trên Vercel, link https://vietchat-delta.vercel.app/ (trả về HTTP 200 khi kiểm tra). Mã nguồn frontend **không nằm trong repo này**.
+- **Backend hiện tại không kết nối được**: frontend được build với `NEXT_PUBLIC_BACKEND_URL` mặc định là `https://veterinary-heating-programs-resident.trycloudflare.com`, và tunnel này không còn phân giải được DNS. Muốn chạy lại: chạy `server.py` (lấy từ nhánh `origin/LeHongQuan_2A202603705`, file không có trên `main`), mở tunnel mới, đặt `NEXT_PUBLIC_BACKEND_URL` trên Vercel và **redeploy** (biến `NEXT_PUBLIC_*` được ghi cứng lúc build).
 - **Tunnel**: backend được expose bằng Cloudflare Tunnel (`cloudflared tunnel --url http://127.0.0.1:8000`). Link tunnel là tạm thời, sống theo phiên.
 - **Trang so sánh**: `starter_v0/compare.html`, so sánh các version.
 - **Demo**: kịch bản trong `artifacts/DEMO.md`.
@@ -147,7 +155,10 @@ Lưu ý: transcript mang nhãn v3 nhưng `tools_hash` là bản 16 tool trước
 - [ ] Sửa G16 (v11), hoặc ghi nhận là lỗi còn lại trong báo cáo.
 - [ ] Nhóm quyết định G05: `paper_text` hay `fetch` cho arXiv URL.
 - [ ] Chạy lại base eval và group eval ít nhất 2 lần để đo nhiễu (hiện mỗi case chỉ chạy 1 lần).
-- [ ] Hoàn thiện `artifacts/REPORT.md` Phần B (B6 Reflection, B7 local model).
+- [x] `artifacts/REPORT.md` Phần B đã cập nhật theo run JSON thật (B1–B7). Còn thiếu: B7 local model.
+- [ ] Sửa 6 tool nhóm để `pytest` xanh (`TOOL.md`, `tools/__init__.py`, không bị `.gitignore`).
+- [ ] Lưu run JSON cho group eval và các version v4–v10 (hoặc gỡ các số liệu đó khỏi báo cáo).
+- [ ] Test chatbot trên Vercel: cần backend và redeploy (xem mục 7).
 - [ ] Bonus local model (tùy chọn).
 - [ ] Commit và nộp: `runs/`, `transcripts/`, các thư mục tool mới, `server.py`, `compare.html`, `TEAM.md`, `artifacts/`. Mã nguồn frontend cần nộp riêng nếu yêu cầu.
 - [ ] Ghi chú: trong lúc làm v3, `REPORT.md` bị một tiến trình khác sửa, làm hash v3 không khớp với file hiện tại (đã ghi trong B6).
