@@ -36,15 +36,15 @@ Research Agent hỗ trợ tra cứu bài đăng trên X, tìm tin trên web, đ�
 - “Tìm bài báo khoa học về RAG.”
 - “Gửi bản tin này lên Telegram” (agent phải hỏi xác nhận trước, không gửi ngay).
 
-**Link dùng thử:** https://vietchat-delta.vercel.app/ (frontend Vercel). Backend: `server.py` + Cloudflare Tunnel; frontend gọi backend qua `NEXT_PUBLIC_BACKEND_URL` (ghi cứng lúc build), nên mỗi lần đổi tunnel cần đặt lại biến này và redeploy. Backend đã kiểm tra cục bộ, xem B6.
+**Link dùng thử:** [Mở Research Agent trên Vercel](https://vietchat-delta.vercel.app/). Frontend gọi backend qua `NEXT_PUBLIC_BACKEND_URL`; trạng thái kết nối cần backend và tunnel đang chạy. Backend đã kiểm tra cục bộ, xem B6.
 
 ### Chi tiết trang dùng thử
 
-Nội dung lấy từ HTML tĩnh của https://vietchat-delta.vercel.app/#home (kiểm tra 2026-11-10). Lúc đó trang hiển thị "Chưa kết nối" nên chưa chat thật được; đây là mô tả giao diện, không phải kết quả agent trả lời.
+Snapshot HTML ban đầu của https://vietchat-delta.vercel.app/#home ngày 2026-11-10 từng hiển thị “Chưa kết nối”; sau đó nhóm đã kiểm tra UI Vercel cùng đồng đội và xác nhận frontend kết nối backend, hoạt động bình thường.
 
 - **Nhận diện:** tiêu đề "Nghiên cứu — Trợ lý nghiên cứu AI", tên app "Research Agent", khẩu hiệu "Nghiên cứu nhanh hơn. Hiểu sâu hơn.", chân trang "Phiên bản v0".
 - **Điều hướng:** "Trang chủ" (`#home`), "Cuộc trò chuyện mới", "Công cụ"; sidebar có "Hôm nay" và "Khám phá cùng Research Agent". Trang không có route riêng cho "dùng thử".
-- **Trạng thái:** hiển thị "Chạy backend" / "Chưa kết nối" (phụ thuộc backend và tunnel đang chạy).
+- **Trạng thái:** UI đã được nhóm kiểm tra trực tiếp và hoạt động bình thường khi backend/tunnel sẵn sàng.
 - **Màn hình chat:** lời chào "Xin chào! Hôm nay tôi giúp gì cho bạn?", mục "Gợi ý nhanh" và ô nhập ở cuối trang.
 - **Câu hỏi mẫu trên trang** (cột tool là suy ra từ mô tả tool của nhóm, không hiển thị trên trang):
 
@@ -111,18 +111,15 @@ Các lỗi tập trung ở ba điểm: prompt v0 khuyến khích đoán khi thi�
 
 ### B6. Live chat và reflection
 
-**Live chat (v3, 3 lượt)**, transcript `transcripts/v3_anthropic_20261110T111846041319.transcript.json` (file không có trong working tree; cần kiểm tra lại trước khi nộp):
-1. "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." → gọi `lookup` (news, day), trả về 3 tin có link.
-2. "Tóm tắt lại 3 tin đó" → gọi `format`, không tìm lại.
-3. "Gửi bản tin này lên Telegram" → hỏi xác nhận `clarify yes_no`, không gửi.
+**Live chat (v3, OpenAI / gpt-4o-mini, 6 lượt)**: [`v3_openai_20261110T223901200376.transcript.json`](../transcripts/v3_openai_20261110T223901200376.transcript.json). Transcript ghi nhận hai lượt hỏi đáp về ca sĩ, sau đó người dùng yêu cầu gửi bản tin lên Telegram. Agent hỏi `clarify(response_type=yes_no)` trước; sau khi người dùng đồng ý, agent xin nội dung, trình bày bản nháp và xin xác nhận nội dung trước khi gọi `send` với `confirmed=true`. Lần gọi `send` trả `HTTPError` 400, nên gửi không thành công. Token bot trong URL lỗi đã được che trong bản transcript lưu trong repo; cần thu hồi/đổi token tương ứng trước khi dùng tiếp.
 
-Lưu ý: transcript này mang nhãn v3, nhưng `tools_hash` là bản 16 tool trước khi sửa `resolve_time_range`, nên lượt 1 còn gọi `resolve_time_range` trước `lookup`. Transcript không khớp hoàn toàn với run v3 trong B7.
+Transcript dùng artifact `v3+p3ec941697a79+t77a379b681e8`, trùng artifact của run v3 OpenAI 20/20 ở B7. Transcript thứ hai `v3_openai_20261110T224223510210.transcript.json` có 2 lượt hỏi đáp và không có lượt xác nhận gửi.
 
 **Test backend của chatbot (2026-11-10):** chạy `server.py` cục bộ, `/api/health` OK, `/api/tools` trả 16 tool, CORS cho `https://vietchat-delta.vercel.app`. Hỏi "Tin AI hôm nay có gì nổi bật? Lấy 3 tin." trả 3 tin có nguồn; hỏi "Tính 15% của 2400000" gọi `calculate` và trả 360,000. Tunnel mới: `https://chrome-prominent-damaged-geek.trycloudflare.com`.
 
 **Reflection:**
 - Thêm tool mới có thể làm giảm routing. Tool `resolve_time_range` được gọi trước `lookup` khi chưa có mô tả giới hạn rõ.
-- Một thay đổi hợp lý trên giấy có thể không có tác dụng. Rule "gửi/đăng → `clarify yes_no`" không làm đổi được `response_type` ở R12. Lỗi này vẫn còn ở v3.
+- Một thay đổi prompt ban đầu chưa đủ để sửa R12: model vẫn hỏi nội dung bằng `response_type=text`. Sau khi làm rõ thứ tự xác nhận trong prompt và đặt `response_type` thành tham số bắt buộc trong schema `clarify`, run v3 trên OpenAI đạt 20/20; R12 chuyển sang `yes_no`. Live chat xác nhận agent đã hỏi trước khi gửi và chỉ gọi `send` sau xác nhận, nhưng lần gửi thất bại với HTTP 400. Run group trên Anthropic trước thay đổi này vẫn còn G16, nên không suy rộng kết quả sang provider/run đó.
 - Chênh lệch 1 case trên 20 (0.05) có thể là nhiễu, vì mỗi cấu hình chỉ chạy 1 lần.
 - Đổi provider làm đổi kết quả nhiều hơn đổi prompt: v1 chạy được trên OpenRouter nhưng lỗi 20/20 trên Anthropic do thiếu key.
 
@@ -138,14 +135,16 @@ Các run có trong `runs/` (đọc từ run JSON):
 | v2 | Anthropic / `claude-haiku-4-5-20251001` | — (0/20 đo được) | — | — | — | 20/20 | `v2_B_base_anthropic_20261110T211828590689.json` |
 | v2 | OpenRouter / `openai/gpt-4o-mini` | 0.95 (19/20) | 1.00 | 0.95 | 1.00 | 0 | `v2_B_base_openrouter_20261110T211951459556.json` |
 | v3 | Anthropic / `claude-haiku-4-5-20251001` | 0.90 (18/20) | 0.95 | 0.90 | 1.00 | 0 | `v3_B_base_anthropic_20261110T213326899474.json` |
+| v3 | OpenAI / `gpt-4o-mini` | 1.00 (20/20) | 1.00 | 1.00 | 1.00 | 0 | [`v3_B_base_openai_20261110T222940419872.json`](../runs/v3_B_base_openai_20261110T222940419872.json) |
 
 Phân tích:
 - **v1 → v2 trên OpenRouter** (cùng model `gpt-4o-mini`): tăng từ 0.90 lên 0.95. Lỗi còn lại của v2 là R12 (`wrong_boundary`); M06 đã được sửa.
 - **v3 trên Haiku 4.5 (Anthropic)**: 0.90. Lỗi: R06 (gọi `resolve_time_range` thay cho `lookup`, `wrong_arg_value`) và R12 (`clarify` dùng `response_type=text`).
-- **Không so sánh trực tiếp được** giữa v0–v2 (OpenRouter) và v3 (Anthropic) vì khác model. Để so sánh công bằng cần chạy v0 và v3 trên cùng một provider và model.
+- **v3 cuối trên OpenAI**: 1.00 (20/20), gồm R12 pass với `clarify(response_type=yes_no)`. So với baseline v0 trên cùng provider/model `gpt-4o-mini` (0.70, 14/20), điểm tăng 0.30; tuy vậy v3 bao gồm nhiều thay đổi tích lũy nên đây không phải phép đo tác động riêng của một chỉnh sửa.
+- Run group Anthropic (14/16) được đánh giá riêng và vẫn có G16 `response_type=text`; run này dùng artifact trước khi chỉnh schema/prompt cuối, nên không mâu thuẫn với R12 pass trên run OpenAI mới.
 - Các run Anthropic v1 và v2 lỗi 20/20 vì thiếu API key, nên không dùng được để đánh giá prompt/tool.
 
-`version_log.csv` có 9 dòng: v0 (2 lần), v1 (2), v2 (2), v3 base và v3 group. Run Anthropic của v1 và v2 không có số liệu do lỗi key.
+`version_log.csv` có 9 bản ghi dữ liệu: v0 (2 lần), v1 (2), v2 (2), v3 Anthropic base, v3 group và v3 OpenAI base cuối. Run Anthropic của v1 và v2 không có số liệu do lỗi key.
 
 ### Small Local Model Challenge (Ollama)
 

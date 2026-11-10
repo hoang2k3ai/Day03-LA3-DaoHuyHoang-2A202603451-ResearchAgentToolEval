@@ -17,8 +17,10 @@ tools:
   # ---------------- Core tools ----------------
   - name: clarify
     description: >
-      Ask the user a concise question when essential information is missing
-      or the request has multiple materially different interpretations.
+      Ask the user one concise question. For an unconfirmed request to send,
+      post, publish, or save, the FIRST tool call must use response_type=yes_no,
+      even if the content is missing. Do not ask for missing content first and
+      never use response_type=text for action authorization.
       WHEN TO USE: Use when the target person, account, post, source, topic,
       platform, or required parameter cannot be reliably determined from
       conversation context.
@@ -29,9 +31,9 @@ tools:
       type: object
       properties:
         question: {type: string, default: "", description: "The single concise question to ask the user, in the user's language."}
-        response_type: {type: string, enum: [text, yes_no, choice], default: "text", description: "text for open answers; yes_no for binary confirmations; choice when offering a fixed set of options (pass options)."}
+        response_type: {type: string, enum: [text, yes_no, choice], description: "REQUIRED. For the first question about sending/posting/publishing/saving, use yes_no even when content is missing. Use text only for ordinary open-ended missing information. Use choice for fixed options."}
         options: {type: array, default: [], items: {type: string}, description: "Only used with response_type=choice. 2-4 short, distinct choices."}
-      required: [question]
+      required: [question, response_type]
 
   - name: timeline
     description: >
@@ -135,9 +137,13 @@ tools:
     description: >
       Send a text message to the user's Telegram chat. This is externally visible
       and cannot be undone.
-      WHEN TO USE: Only after the user has explicitly approved the exact text to
-      send in this conversation. Before calling, show the user the text and the
-      destination and get an explicit yes.
+      WHEN TO USE: Call only after explicit user confirmation. If the user asks
+      to send, post, or publish but has not confirmed yet, first call clarify
+      with response_type=yes_no, even when the requested text is missing or
+      referred to vaguely. Never use response_type=text for this confirmation.
+      If the user agrees but the exact text has not been provided and shown for
+      review, obtain the text, show the final text and destination, and get
+      confirmation of that exact content before calling send.
       WHEN NOT TO USE: Do not use for drafting, previewing, or preparing content.
       A request to draft or prepare content is NOT permission to send it. Never
       send without confirmation.

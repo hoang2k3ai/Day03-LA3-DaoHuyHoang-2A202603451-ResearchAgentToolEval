@@ -1,7 +1,8 @@
-"""TODO(student): Tool Unit Test Challenge.
+"""Offline unit tests for core and team-added tools.
 
-Each test below is a stub. Replace `pytest.skip(...)` with a real test.
-Patterns to copy are in test_tools_examples.py. Fixtures are in conftest.py.
+HTTP calls are mocked with ``fake_http`` and filesystem writes use ``tmp_path``.
+The examples in test_tools_examples.py and fixtures in conftest.py provide the
+test patterns used here.
 
 Rules:
 - Offline only: mock HTTP with `fake_http`, set fake keys with `monkeypatch.setenv`.
